@@ -197,7 +197,7 @@
             return carries;
         }
 
-        // --- Определения НОВЫХ типов заданий ---
+        // --- Определения типов заданий ---
         const problemTypes = [
             {
                 id: "Б1", // a4 : a1_1 + c3 + c5 * a1_2
@@ -517,6 +517,137 @@
             shuffleArray(problemTypes);
             const selectedTypes = problemTypes.slice(0, 3);
             
+            generatedProblems = selectedTypes.map(type => type.generator());
+
+            problemsContainer.innerHTML = '';
+            generatedProblems.forEach((p, index) => {
+                const problemEl = document.createElement('div');
+                problemEl.className = 'problem';
+                problemEl.innerHTML = `
+                    <span class="problem-text">${index + 1}. ${p.problem} =</span>
+                    <input type="number" class="answer-input">
+                `;
+                problemsContainer.appendChild(problemEl);
+            });
+            
+            startTimer(600); // 10 минут
+        }
+
+        // --- ИЗМЕНЁННАЯ ФУНКЦИЯ ТАЙМЕРА ---
+        function startTimer(duration) {
+            // Запоминаем время, когда таймер должен закончиться
+            const endTime = Date.now() + duration * 1000;
+
+            timerInterval = setInterval(() => {
+                // Вычисляем, сколько времени осталось на самом деле
+                const timeLeft = Math.round((endTime - Date.now()) / 1000);
+
+                if (timeLeft < 0) {
+                    clearInterval(timerInterval);
+                    timerEl.textContent = "Время вышло!";
+                    checkAnswers();
+                    return; // Выходим из функции, чтобы не отображать отрицательное время
+                }
+                
+                // Отображаем оставшееся время
+                const minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+                timerEl.textContent = `${minutes}:${seconds}`;
+
+            }, 1000); // Интервал по-прежнему 1 секунда для обновления дисплея
+        }
+
+        function checkAnswers() {
+            // Если таймер еще работает, останавливаем его
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            checkBtn.disabled = true;
+            
+            const inputs = document.querySelectorAll('.answer-input');
+            let correctCount = 0;
+
+            inputs.forEach((input, index) => {
+                const userAnswer = parseInt(input.value, 10);
+                const correctAnswer = generatedProblems[index].answer;
+                
+                generatedProblems[index].userAnswer = isNaN(userAnswer) ? 'нет ответа' : userAnswer;
+
+                if (userAnswer === correctAnswer) {
+                    progressSquares[index].classList.add('correct');
+                    correctCount++;
+                } else {
+                    progressSquares[index].classList.add('incorrect');
+                }
+                input.disabled = true;
+            });
+
+            scoreTextEl.textContent = `Вы решили правильно ${correctCount} из 3 примеров.`;
+            resultsEl.classList.remove('hidden');
+            printBtn.classList.remove('hidden');
+        }
+        
+        function printResults() {
+            let printContent = `
+                <style>
+                    body { font-family: Arial, sans-serif; }
+                    h1 { text-align: center; }
+                    .problem-item { margin-bottom: 20px; font-size: 16px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+                    .correct { color: green; }
+                    .incorrect { color: red; }
+                </style>
+                <h1>Результаты тренажёра "Базовый счёт"</h1>
+            `;
+
+            generatedProblems.forEach((p, index) => {
+                const isCorrect = p.userAnswer === p.answer;
+                printContent += `
+                    <div class="problem-item">
+                        <p><b>Задание ${index + 1}:</b> ${p.problem}</p>
+                        <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${p.userAnswer}</span></p>
+                        <p><b>Правильный ответ:</b> ${p.answer}</p>
+                    </div>
+                `;
+            });
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        checkBtn.addEventListener('click', checkAnswers);
+        printBtn.addEventListener('click', printResults);
+        
+        init();
+
+    </script>
+</body>
+</html>
+        // --- Логика тренажёра ---
+        const problemsContainer = document.getElementById('problems-container');
+        const checkBtn = document.getElementById('checkBtn');
+        const timerEl = document.getElementById('timer');
+        const progressSquares = document.querySelectorAll('.progress-square');
+        const resultsEl = document.getElementById('results');
+        const scoreTextEl = document.getElementById('score-text');
+        const printBtn = document.getElementById('printBtn');
+
+        let generatedProblems = [];
+        let timerInterval;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        function init() {
+            shuffleArray(problemTypes);
+            const selectedTypes = problemTypes.slice(0, 3);
+            
             generatedProblems = selectedTypes.map(type => {
                 const result = type.generator();
                 return result;
@@ -616,3 +747,4 @@
     </script>
 </body>
 </html>
+
