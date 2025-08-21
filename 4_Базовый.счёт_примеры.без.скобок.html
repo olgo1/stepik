@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажёр: Базовый счёт</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .trainer-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 25px 35px;
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            text-align: center;
+            color: #1c1e21;
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+        h1 + p {
+            text-align: center;
+            color: #606770;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #f7f8fa;
+            border-radius: 8px;
+        }
+        .progress-bar {
+            display: flex;
+            gap: 10px;
+        }
+        .progress-square {
+            width: 28px;
+            height: 28px;
+            background-color: #e4e6eb;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
+        }
+        .progress-square.correct { background-color: #31a24c; }
+        .progress-square.incorrect { background-color: #e02c4d; }
+        #timer {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1c1e21;
+            background-color: #e4e6eb;
+            padding: 5px 15px;
+            border-radius: 18px;
+        }
+        .problem {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 600;
+        }
+        .problem-text {
+            flex-grow: 1;
+        }
+        .problem input {
+            width: 150px;
+            padding: 10px;
+            border: 2px solid #ccd0d5;
+            border-radius: 6px;
+            font-size: 18px;
+            text-align: right;
+            margin-left: 15px;
+            transition: border-color 0.2s ease;
+            -moz-appearance: textfield;
+        }
+        .problem input::-webkit-outer-spin-button,
+        .problem input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .problem input:focus {
+            outline: none;
+            border-color: #1b74e4;
+        }
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .actions button {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        #checkBtn {
+            background-color: #1b74e4;
+            color: white;
+        }
+        #checkBtn:hover { background-color: #1868cd; }
+        #checkBtn:active { transform: scale(0.98); }
+        #checkBtn:disabled { background-color: #ccd0d5; cursor: not-allowed; }
+        #results {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 18px;
+        }
+        #printBtn {
+            background-color: #31a24c;
+            color: white;
+            margin-top: 15px;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="trainer-container">
+        <h1>Базовый счёт</h1>
+        <p>Примеры без скобок</p>
+
+        <div class="info-bar">
+            <div class="progress-bar">
+                <div class="progress-square"></div>
+                <div class="progress-square"></div>
+                <div class="progress-square"></div>
+            </div>
+            <div id="timer">10:00</div>
+        </div>
+
+        <div id="problems-container">
+            </div>
+
+        <div class="actions">
+            <button id="checkBtn">Проверить</button>
+        </div>
+
+        <div id="results" class="hidden">
+            <p id="score-text"></p>
+            <button id="printBtn" class="hidden">Распечатать PDF с заданиями</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Утилиты для генерации ---
+        const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        
+        function countCarries(num1, num2, isSubtraction) {
+            let s1 = String(Math.abs(num1));
+            let s2 = String(Math.abs(num2));
+            if (s1 === '0' || s2 === '0') return 0;
+            let carries = 0;
+            let carry = 0;
+            const len = Math.max(s1.length, s2.length);
+
+            s1 = s1.padStart(len, '0');
+            s2 = s2.padStart(len, '0');
+
+            for (let i = len - 1; i >= 0; i--) {
+                let d1 = parseInt(s1[i]);
+                let d2 = parseInt(s2[i]);
+                if (isSubtraction) {
+                    d1 -= carry;
+                    carry = 0;
+                    if (d1 < d2) {
+                        carries++;
+                        carry = 1;
+                    }
+                } else {
+                    const sum = d1 + d2 + carry;
+                    if (sum >= 10) {
+                        carries++;
+                        carry = 1;
+                    } else {
+                        carry = 0;
+                    }
+                }
+            }
+            return carries;
+        }
+
+        // --- Определения НОВЫХ типов заданий ---
+        const problemTypes = [
+            {
+                id: "Б1", // a4 : a1_1 + c3 + c5 * a1_2
+                generator: () => {
+                    while (true) {
+                        const a1_1 = getRandomInt(4, 9);
+                        const a1_2 = [4, 5, 6, 7, 8, 9].filter(n => n !== a1_1)[0];
+                        
+                        let x, c3;
+                        do {
+                           x = getRandomInt(100, 999);
+                           c3 = getRandomInt(100, 999);
+                        } while (countCarries(x, c3, false) < 2);
+                        
+                        const a4 = x * a1_1;
+                        if (a4 < 1000 || a4 > 9999 || a4 % a1_2 !== 0) continue;
+                        
+                        const c5 = getRandomInt(10000, 99999);
+                        const term3 = c5 * a1_2;
+
+                        const sum1 = x + c3;
+                        if (sum1 <= 0 || sum1 + term3 <= 0) continue;
+
+                        const problemStr = `${a4} : ${a1_1} + ${c3} + ${c5} * ${a1_2}`;
+                        const answer = sum1 + term3;
+                        return { problem: problemStr.replace(/\+ -/g, '- '), answer };
+                    }
+                }
+            },
+            {
+                id: "Б2", // a5 + c4 : a1 + c1 * a4
+                generator: () => {
+                     while(true){
+                        const a1 = [4, 5][getRandomInt(0, 1)];
+                        const c1 = getRandomInt(4, 9);
+                        const a4 = getRandomInt(Math.ceil(20000 / c1) + 1, 9999);
+                        
+                        let a5, c4;
+                        do {
+                            const k = getRandomInt(20, 200) * 100;
+                            c4 = getRandomInt(1000, 9000);
+                            c4 = Math.round(c4 / a1) * a1;
+                            a5 = k - c4;
+                        } while(a5 < 10000 || a5 > 99999);
+                        
+                        const term1 = a5;
+                        const term2 = c4 / a1;
+                        const term3 = c1 * a4;
+                        const sum1 = term1 + term2;
+
+                        if (sum1 <= 0 || (sum1 + term3) <= 0) continue;
+                        if (countCarries(term1, term2, false) < 2) continue;
+                        
+                        const problemStr = `${a5} + ${c4} : ${a1} + ${c1} * ${a4}`;
+                        const answer = sum1 + term3;
+                        return { problem: problemStr.replace(/\+ -/g, '- '), answer };
+                    }
+                }
+            },
+            {
+                id: "Б3", // a1_1 * a4 + c3 : a1_2 + c5
+                generator: () => {
+                     while(true){
+                        const a1_1 = getRandomInt(4, 9);
+                        const a1_2 = [4,5,6,7,8,9].filter(n => n !== a1_1)[0];
+                        
+                        const c3_div = getRandomInt(Math.ceil(501/a1_2), Math.floor(999/a1_2));
+                        const c3 = c3_div * a1_2;
+                        
+                        const term2 = c3 / a1_2;
+                        
+                        let term1, a4;
+                        do {
+                           a4 = getRandomInt(1000, 9999);
+                           term1 = a1_1 * a4;
+                        } while(countCarries(term1, term2, false) < 2);
+
+                        const sum1 = term1 + term2;
+                        if(sum1 <= 0) continue;
+                        
+                        const c5 = getRandomInt(10000, 99999);
+                        const term3 = c5;
+                        if (sum1 + term3 <= 0) continue;
+
+                        const problemStr = `${a1_1} * ${a4} + ${c3} : ${a1_2} + ${c5}`;
+                        const answer = sum1 + term3;
+                        return { problem: problemStr.replace(/\+ -/g, '- '), answer };
+                    }
+                }
+            },
+            {
+                id: "Б4", // a5 - a4 * a1_1 - a34 * a1_2
+                 generator: () => {
+                    while (true) {
+                        const a1_1 = getRandomInt(4, 9);
+                        const a1_2 = getRandomInt(4, 9);
+
+                        let term2, term3, a4, a34;
+                        do {
+                            a34 = getRandomInt(100, 9999);
+                            term3 = a34 * a1_2;
+                            const k = getRandomInt(1, 20) * 100;
+                            term2 = k + term3;
+                            if (term2 % a1_1 !== 0) continue;
+                            a4 = term2 / a1_1;
+                        } while(a4 < 1000 || a4 > 9999);
+                        
+                        let term1, a5;
+                        do {
+                            a5 = getRandomInt(term2 + term3 + 1, 99999);
+                            term1 = a5;
+                        } while (countCarries(term1, term2, true) < 2);
+                        
+                        const diff1 = term1 - term2;
+                        if(diff1 <= term3) continue;
+
+                        const problemStr = `${a5} - ${a4} * ${a1_1} - ${a34} * ${a1_2}`;
+                        const answer = diff1 - term3;
+                        return { problem: problemStr, answer };
+                    }
+                }
+            },
+            {
+                id: "Б5", // a1 * a5_1 - a6 - a5_2
+                generator: () => {
+                    while (true) {
+                         const a1 = getRandomInt(4, 9);
+                         const a5_2 = getRandomInt(10000, 20000);
+                         const a6 = a5_2 + getRandomInt(1,5) * 1000 + 80000;
+
+                         let term1, a5_1;
+                         do {
+                            const min_a5_1 = Math.ceil((a6 + a5_2 + 1)/a1);
+                            if (min_a5_1 > 99999) continue;
+                            a5_1 = getRandomInt(min_a5_1, 99999);
+                            term1 = a1 * a5_1;
+                         } while(term1 <= 10000 || countCarries(term1, a6, true) < 2);
+                        
+                         const diff1 = term1 - a6;
+                         if(diff1 <= a5_2) continue;
+                        
+                         const problemStr = `${a1} * ${a5_1} - ${a6} - ${a5_2}`;
+                         const answer = diff1 - a5_2;
+                         return { problem: problemStr, answer };
+                    }
+                }
+            },
+            {
+                 id: "Б6", // a1_1 * a5 + c4 * a1_2 : a1_3
+                 generator: () => {
+                     while(true){
+                        const a1_3 = 6;
+                        const a1_2 = [4, 5, 7, 8][getRandomInt(0,3)];
+                        const a1_1 = [4,5,7,8,9].filter(n => n !== a1_2 && n !== a1_3)[0];
+                        
+                        let c4;
+                        do {
+                           c4 = getRandomInt(1000, 9999);
+                        } while(c4 % 3 !== 0 || (c4*a1_2) % a1_3 !== 0);
+                        
+                        const k = getRandomInt(3, 20) * 1000;
+                        const a5 = k - c4;
+                        if (a5 < 10000 || a5 > 99999 || a5 * a1_1 >= 100000) continue;
+
+                        const term1 = a1_1 * a5;
+                        const term2 = c4 * a1_2 / a1_3;
+
+                        if (term1 < 0 || term2 < 0 || countCarries(term1, term2, false) < 2) continue;
+                        if (term1 + term2 <= 0) continue;
+
+                        const problemStr = `${a1_1} * ${a5} + ${c4} * ${a1_2} : ${a1_3}`;
+                        const answer = term1 + term2;
+                        return { problem: problemStr.replace(/\+ -/g, '- '), answer };
+                     }
+                 }
+            },
+            {
+                 id: "Б7", // a5 + c4_1 + c4_2 : a1_1 : a1_2
+                 generator: () => {
+                     while(true){
+                         const a1_1 = getRandomInt(4, 9);
+                         const a1_2 = getRandomInt(3, 9);
+                         
+                         const term3_mult = a1_1 * a1_2;
+                         const c4_2 = getRandomInt(Math.ceil(1000/term3_mult), Math.floor(9999/term3_mult)) * term3_mult;
+                         const term3 = c4_2 / term3_mult;
+
+                         let a5, c4_1;
+                         do {
+                            a5 = getRandomInt(10000, 99999);
+                            c4_1 = getRandomInt(1000, 9999);
+                         } while(countCarries(a5, c4_1, false) < 2);
+                         
+                         const sum1 = a5 + c4_1;
+                         if(sum1 <= 0 || sum1 + term3 <= 0) continue;
+                         
+                         const problemStr = `${a5} + ${c4_1} + ${c4_2} : ${a1_1} : ${a1_2}`;
+                         const answer = sum1 + term3;
+                         return { problem: problemStr.replace(/\+ -/g, '- '), answer };
+                     }
+                 }
+            },
+            {
+                 id: "Б8", // a5 : a1_1 - a4* a1_2 + c5
+                 generator: () => {
+                     while(true){
+                         const a1_1 = getRandomInt(4, 9);
+                         const a1_2 = getRandomInt(4, 9);
+                         
+                         let term1, term2, a5, a4;
+                         do {
+                            a4 = getRandomInt(1000, 9999);
+                            term2 = a4 * a1_2;
+                            a5 = getRandomInt(Math.ceil((term2+1)/a1_1), Math.floor(99999/a1_1)) * a1_1;
+                            term1 = a5 / a1_1;
+                         } while(term1 <= term2 || countCarries(term1, term2, true) < 2);
+
+                         const diff1 = term1 - term2;
+                         const c5 = getRandomInt(Math.abs(diff1)+1, 99999);
+                         
+                         const problemStr = `${a5} : ${a1_1} - ${a4} * ${a1_2} + ${c5}`;
+                         const answer = diff1 + c5;
+                         return { problem: problemStr.replace(/\+ -/g, '- '), answer };
+                     }
+                 }
+            },
+             {
+                 id: "Б9", // a2 : a1 * a4 + c5 - a5
+                 generator: () => {
+                     while(true){
+                         const a1 = getRandomInt(1, 9);
+                         const term1_div = getRandomInt(4, 9);
+                         const a2 = term1_div * a1;
+                         if(a2 < 10 || a2 > 99) continue;
+
+                         const c5 = getRandomInt(-99999, 99999);
+                         let a5;
+                         do {
+                            a5 = getRandomInt(10000, 99999);
+                         } while ( (a5 - Math.abs(c5)) <= 100 || ((a5 - Math.abs(c5)) % 10 === 0) );
+
+                         const a4 = getRandomInt(1000, 9999);
+                         const term1 = term1_div * a4;
+
+                         const sum1 = term1 + c5;
+                         if(sum1 <= a5 || countCarries(sum1, a5, true) < 2) continue;
+                         
+                         const problemStr = `${a2} : ${a1} * ${a4} + ${c5} - ${a5}`;
+                         const answer = sum1 - a5;
+                         return { problem: problemStr.replace(/\+ -/g, '- '), answer };
+                     }
+                 }
+            },
+            {
+                id: "Б10", // a5_1 - a2 + c1 *c4 - a5_2
+                generator: () => {
+                    while (true) {
+                        const a2 = getRandomInt(11, 99);
+                        let a5_1;
+                        do {
+                            a5_1 = getRandomInt(10000, 99999);
+                        } while(!( (a5_1 % 10 < a2 % 10) ));
+
+                        const diff = a5_1 - a2;
+                        const c1 = getRandomInt(1, 9);
+                        const c4 = getRandomInt(1000, 9999);
+                        const prod = c1 * c4;
+
+                        if (diff + prod <= 0) continue;
+                        const a5_2 = getRandomInt(10000, Math.min(99999, diff + prod - 1));
+                        if(a5_2 === a5_1) continue;
+                        
+                        const problemStr = `${a5_1} - ${a2} + ${c1} * ${c4} - ${a5_2}`;
+                        const answer = diff + prod - a5_2;
+                        return { problem: problemStr, answer };
+                    }
+                }
+            }
+        ];
+
+        // --- Логика тренажёра ---
+        const problemsContainer = document.getElementById('problems-container');
+        const checkBtn = document.getElementById('checkBtn');
+        const timerEl = document.getElementById('timer');
+        const progressSquares = document.querySelectorAll('.progress-square');
+        const resultsEl = document.getElementById('results');
+        const scoreTextEl = document.getElementById('score-text');
+        const printBtn = document.getElementById('printBtn');
+
+        let generatedProblems = [];
+        let timerInterval;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        function init() {
+            shuffleArray(problemTypes);
+            const selectedTypes = problemTypes.slice(0, 3);
+            
+            generatedProblems = selectedTypes.map(type => {
+                const result = type.generator();
+                return result;
+            });
+
+            problemsContainer.innerHTML = '';
+            generatedProblems.forEach((p, index) => {
+                const problemEl = document.createElement('div');
+                problemEl.className = 'problem';
+                problemEl.innerHTML = `
+                    <span class="problem-text">${index + 1}. ${p.problem} =</span>
+                    <input type="number" class="answer-input">
+                `;
+                problemsContainer.appendChild(problemEl);
+            });
+            
+            startTimer(600);
+        }
+
+        function startTimer(duration) {
+            let timeLeft = duration;
+            timerInterval = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+                timerEl.textContent = `${minutes}:${seconds}`;
+
+                if (--timeLeft < 0) {
+                    clearInterval(timerInterval);
+                    timerEl.textContent = "Время вышло!";
+                    checkAnswers();
+                }
+            }, 1000);
+        }
+
+        function checkAnswers() {
+            clearInterval(timerInterval);
+            checkBtn.disabled = true;
+            
+            const inputs = document.querySelectorAll('.answer-input');
+            let correctCount = 0;
+
+            inputs.forEach((input, index) => {
+                const userAnswer = parseInt(input.value, 10);
+                const correctAnswer = generatedProblems[index].answer;
+                
+                generatedProblems[index].userAnswer = isNaN(userAnswer) ? 'нет ответа' : userAnswer;
+
+                if (userAnswer === correctAnswer) {
+                    progressSquares[index].classList.add('correct');
+                    correctCount++;
+                } else {
+                    progressSquares[index].classList.add('incorrect');
+                }
+                input.disabled = true;
+            });
+
+            scoreTextEl.textContent = `Вы решили правильно ${correctCount} из 3 примеров.`;
+            resultsEl.classList.remove('hidden');
+            printBtn.classList.remove('hidden');
+        }
+        
+        function printResults() {
+            let printContent = `
+                <style>
+                    body { font-family: Arial, sans-serif; }
+                    h1 { text-align: center; }
+                    .problem-item { margin-bottom: 20px; font-size: 16px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+                    .correct { color: green; }
+                    .incorrect { color: red; }
+                </style>
+                <h1>Результаты тренажёра "Базовый счёт"</h1>
+            `;
+
+            generatedProblems.forEach((p, index) => {
+                const isCorrect = p.userAnswer === p.answer;
+                printContent += `
+                    <div class="problem-item">
+                        <p><b>Задание ${index + 1}:</b> ${p.problem}</p>
+                        <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${p.userAnswer}</span></p>
+                        <p><b>Правильный ответ:</b> ${p.answer}</p>
+                    </div>
+                `;
+            });
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        checkBtn.addEventListener('click', checkAnswers);
+        printBtn.addEventListener('click', printResults);
+        
+        init();
+
+    </script>
+</body>
+</html>
