@@ -294,16 +294,11 @@
                     while (true) {
                         const a1_1 = getRandomInt(4, 9);
                         const a1_2 = getRandomInt(4, 9);
+                        const a4 = getRandomInt(1000, 9999);
+                        const a34 = getRandomInt(100, 9999);
 
-                        let term2, term3, a4, a34;
-                        do {
-                            a34 = getRandomInt(100, 9999);
-                            term3 = a34 * a1_2;
-                            const k = getRandomInt(1, 20) * 100;
-                            term2 = k + term3;
-                            if (term2 % a1_1 !== 0) continue;
-                            a4 = term2 / a1_1;
-                        } while(a4 < 1000 || a4 > 9999);
+                        const term2 = a4 * a1_1;
+                        const term3 = a34 * a1_2;
                         
                         let term1, a5;
                         do {
@@ -325,16 +320,25 @@
                 generator: () => {
                     while (true) {
                          const a1 = getRandomInt(4, 9);
+                         
                          const a5_2 = getRandomInt(10000, 20000);
                          const a6 = a5_2 + getRandomInt(1,5) * 1000 + 80000;
 
                          let term1, a5_1;
-                         do {
+                         let found = false;
+                         let attempts = 0;
+                         while(attempts < 500){
                             const min_a5_1 = Math.ceil((a6 + a5_2 + 1)/a1);
-                            if (min_a5_1 > 99999) continue;
+                            if (min_a5_1 > 99999) break;
                             a5_1 = getRandomInt(min_a5_1, 99999);
                             term1 = a1 * a5_1;
-                         } while(term1 <= 10000 || countCarries(term1, a6, true) < 2);
+                            if(term1 > 10000 && countCarries(term1, a6, true) >= 2) {
+                                found = true;
+                                break;
+                            }
+                            attempts++;
+                         }
+                         if(!found) continue;
                         
                          const diff1 = term1 - a6;
                          if(diff1 <= a5_2) continue;
@@ -408,15 +412,27 @@
                          const a1_2 = getRandomInt(4, 9);
                          
                          let term1, term2, a5, a4;
-                         do {
-                            a4 = getRandomInt(1000, 9999);
+                         let found = false;
+                         let attempts = 0;
+                         while(attempts < 500){
+                            a4 = getRandomInt(1000, 8000);
                             term2 = a4 * a1_2;
-                            a5 = getRandomInt(Math.ceil((term2+1)/a1_1), Math.floor(99999/a1_1)) * a1_1;
+                            const min_a5_quotient = Math.ceil((term2+1)/a1_1);
+                            const max_a5_quotient = Math.floor(99999/a1_1);
+                            if(min_a5_quotient > max_a5_quotient) { attempts++; continue; }
+                            const a5_quotient = getRandomInt(min_a5_quotient, max_a5_quotient);
+                            a5 = a5_quotient * a1_1;
                             term1 = a5 / a1_1;
-                         } while(term1 <= term2 || countCarries(term1, term2, true) < 2);
+                            if(term1 > term2 && countCarries(term1, term2, true) >= 2){
+                                found = true;
+                                break;
+                            }
+                            attempts++;
+                         }
+                         if(!found) continue;
 
                          const diff1 = term1 - term2;
-                         const c5 = getRandomInt(Math.abs(diff1)+1, 99999);
+                         const c5 = getRandomInt(10000, 99999);
                          
                          const problemStr = `${a5} : ${a1_1} - ${a4} * ${a1_2} + ${c5}`;
                          const answer = diff1 + c5;
@@ -433,7 +449,7 @@
                          const a2 = term1_div * a1;
                          if(a2 < 10 || a2 > 99) continue;
 
-                         const c5 = getRandomInt(-99999, 99999);
+                         const c5 = getRandomInt(10000, 99999);
                          let a5;
                          do {
                             a5 = getRandomInt(10000, 99999);
@@ -443,7 +459,7 @@
                          const term1 = term1_div * a4;
 
                          const sum1 = term1 + c5;
-                         if(sum1 <= a5 || countCarries(sum1, a5, true) < 2) continue;
+                         if(sum1 <= a5) continue;
                          
                          const problemStr = `${a2} : ${a1} * ${a4} + ${c5} - ${a5}`;
                          const answer = sum1 - a5;
