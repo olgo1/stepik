@@ -77,6 +77,7 @@
         }
         .problem-text {
             flex-grow: 1;
+            line-height: 1.4;
         }
         .problem input {
             width: 150px;
@@ -129,13 +130,36 @@
             margin-top: 15px;
         }
         .hidden { display: none; }
+
+        /* --- НОВЫЙ БЛОК: Стили для мобильных устройств --- */
+        @media (max-width: 600px) {
+            .problem {
+                flex-direction: column; /* Ставим элементы друг под друга */
+                align-items: flex-start; /* Выравниваем по левому краю */
+            }
+
+            .problem input {
+                width: 100%;          /* Поле для ответа на всю ширину */
+                margin-left: 0;       /* Убираем отступ слева */
+                margin-top: 10px;     /* Добавляем отступ сверху */
+                box-sizing: border-box; /* Чтобы ширина 100% учитывала рамки */
+            }
+            
+            .trainer-container {
+                padding: 20px 25px; /* Уменьшаем боковые отступы на узких экранах */
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="trainer-container">
         <h1>Математический тренажёр</h1>
-        <p>Решите 3 примера за 10 минут</p>
+        <p>Решите 3 случайных примера за 10 минут</p>
 
         <div class="info-bar">
             <div class="progress-bar">
@@ -165,7 +189,7 @@
         
         function isValid(num) {
             const s = String(Math.abs(num));
-            if (s.length <= 1) return true;
+            if (s.length <= 1) return true; 
             if (num % 10 === 0) return false;
 
             const counts = {};
@@ -208,7 +232,7 @@
              s2 = s2.padStart(len, '0');
              
              if(isSubtraction && Number(s1) < Number(s2)) {
-                 [s1, s2] = [s2, s1]; // Ensure s1 is larger for borrow logic
+                 [s1, s2] = [s2, s1];
              }
 
              for (let i = len - 1; i >= 0; i--) {
@@ -240,8 +264,7 @@
                 id: "Тип C1",
                 generator: () => {
                     while (true) {
-                        const a1_1 = getRandomInt(4, 9);
-                        const a1_2 = getRandomInt(4, 9);
+                        const a1_1 = getRandomInt(4, 9), a1_2 = getRandomInt(4, 9);
                         const a4_1 = generateValidNumber(1000, 9999);
                         if (!a4_1) continue;
 
@@ -260,7 +283,7 @@
                         const a5_2 = generateValidNumber(10000, 99999);
                         if (!a5_2) continue;
                         
-                        const a45_1 = generateValidNumber(1000, 99999);
+                        const a45_1 = generateValidNumber(term_in_paren + a5_2, 99999);
                         if (!a45_1) continue;
 
                         const answer = a45_1 + term_in_paren - a5_2;
@@ -275,13 +298,12 @@
                 id: "Тип C2",
                 generator: () => {
                     while(true) {
-                        const a1_1 = getRandomInt(4, 9);
-                        const a1_2 = getRandomInt(4, 9);
+                        const a1_1 = getRandomInt(4, 9), a1_2 = getRandomInt(4, 9);
                         const a5 = generateValidNumber(50001, 99999, {divisibleBy: a1_2});
                         if (!a5) continue;
                         
                         const Q = a5 / a1_2;
-                        const a45_2 = generateValidNumber(1000, Q - 1);
+                        const a45_2 = generateValidNumber(1000, Math.floor(Q) - 1);
                         if (!a45_2) continue;
 
                         const S = Q - a45_2;
@@ -295,7 +317,7 @@
                         if (!c3 || Part_A + c3 <= 0 || c3 < -Part_A) continue;
                         
                         const answer = Part_A + c3;
-                        const c3_str = c3 > 0 ? `+ ${c3}` : `- ${Math.abs(c3)}`;
+                        const c3_str = c3 >= 0 ? `+ ${c3}` : `- ${Math.abs(c3)}`;
                         const problemStr = `${a45_1} - ${a1_1} * (${a5} : ${a1_2} - ${a45_2}) ${c3_str}`;
                         return { problem: problemStr, answer };
                     }
@@ -305,8 +327,7 @@
                 id: "Тип C3",
                  generator: () => {
                      while(true) {
-                         const a1_1 = getRandomInt(4, 9);
-                         const a1_2 = getRandomInt(4, 9);
+                         const a1_1 = getRandomInt(4, 9), a1_2 = getRandomInt(4, 9);
                          const a34 = generateValidNumber(100, 999);
                          if(!a34) continue;
                          
@@ -347,8 +368,7 @@
                 id: "Тип C4",
                 generator: () => {
                     while (true) {
-                        const a1_1 = getRandomInt(4, 9);
-                        const a1_2 = getRandomInt(4, 9);
+                        const a1_1 = getRandomInt(4, 9), a1_2 = getRandomInt(4, 9);
                         const a5 = generateValidNumber(10000, 99999, {divisibleBy: a1_2});
                         if (!a5) continue;
 
@@ -356,7 +376,7 @@
                         let c4, S;
                         let attempts = 0;
                         while(attempts < 100){
-                            c4 = generateValidNumber(1000, 9999, {isC: true});
+                            c4 = generateValidNumber(-9999, 9999, {isC: true});
                             if (c4 && Q + c4 > 0 && countCarries(Q, c4, c4 < 0) > 0) {
                                 S = Q + c4;
                                 break;
@@ -376,8 +396,8 @@
                         if (!c34 || Part_A + c34 <= 0) continue;
                         
                         const answer = Part_A + c34;
-                        const c4_str = c4 > 0 ? `+ ${c4}` : `- ${Math.abs(c4)}`;
-                        const c34_str = c34 > 0 ? `+ ${c34}` : `- ${Math.abs(c34)}`;
+                        const c4_str = c4 >= 0 ? `+ ${c4}` : `- ${Math.abs(c4)}`;
+                        const c34_str = c34 >= 0 ? `+ ${c34}` : `- ${Math.abs(c34)}`;
 
                         const problemStr = `${a4} * ${a1_1} - (${a5} : ${a1_2} ${c4_str}) ${c34_str}`;
                         return { problem: problemStr, answer };
@@ -501,7 +521,7 @@
                         
                         let a5_1;
                         let attempts = 0;
-                        while(attempts < 100) {
+                        while(attempts < 200) {
                             a5_1 = generateValidNumber(P + 1, 99999);
                             if (a5_1 && (a5_1 % 1000 < P % 1000)) break;
                             a5_1 = null;
@@ -616,6 +636,9 @@
         function init() {
             shuffleArray(problemTypes);
             const selectedTypes = problemTypes.slice(0, 3);
+            
+            document.querySelector('h1 + p').textContent = `Решите 3 примера (${selectedTypes.map(t=>t.id).join(', ')}) за 10 минут`;
+
             generatedProblems = selectedTypes.map(type => {
                 try {
                     return type.generator();
@@ -639,20 +662,25 @@
         }
 
         function startTimer(duration) {
+            let timer = duration, minutes, seconds;
             const endTime = Date.now() + duration * 1000;
-            timerInterval = setInterval(() => {
-                const timeLeft = Math.round((endTime - Date.now()) / 1000);
-                if (timeLeft < 0) {
+            
+            const updateDisplay = () => {
+                 const timeLeft = Math.max(0, Math.round((endTime - Date.now()) / 1000));
+                 minutes = Math.floor(timeLeft / 60);
+                 seconds = timeLeft % 60;
+                 seconds = seconds < 10 ? '0' + seconds : seconds;
+                 timerEl.textContent = `${minutes}:${seconds}`;
+
+                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     timerEl.textContent = "Время вышло!";
                     checkAnswers();
-                    return;
-                }
-                const minutes = Math.floor(timeLeft / 60);
-                let seconds = timeLeft % 60;
-                seconds = seconds < 10 ? '0' + seconds : seconds;
-                timerEl.textContent = `${minutes}:${seconds}`;
-            }, 1000);
+                 }
+            }
+
+            updateDisplay();
+            timerInterval = setInterval(updateDisplay, 1000);
         }
 
         function checkAnswers() {
