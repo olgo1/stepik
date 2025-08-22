@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Математический тренажёр</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .trainer-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 25px 35px;
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            text-align: center;
+            color: #1c1e21;
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+        h1 + p {
+            text-align: center;
+            color: #606770;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #f7f8fa;
+            border-radius: 8px;
+        }
+        .progress-bar {
+            display: flex;
+            gap: 10px;
+        }
+        .progress-square {
+            width: 28px;
+            height: 28px;
+            background-color: #e4e6eb;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
+        }
+        .progress-square.correct { background-color: #31a24c; }
+        .progress-square.incorrect { background-color: #e02c4d; }
+        #timer {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1c1e21;
+            background-color: #e4e6eb;
+            padding: 5px 15px;
+            border-radius: 18px;
+        }
+        .problem {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 600;
+        }
+        .problem-text {
+            flex-grow: 1;
+        }
+        .problem input {
+            width: 150px;
+            padding: 10px;
+            border: 2px solid #ccd0d5;
+            border-radius: 6px;
+            font-size: 18px;
+            text-align: right;
+            margin-left: 15px;
+            transition: border-color 0.2s ease;
+            -moz-appearance: textfield;
+        }
+        .problem input::-webkit-outer-spin-button,
+        .problem input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .problem input:focus {
+            outline: none;
+            border-color: #1b74e4;
+        }
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .actions button {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        #checkBtn {
+            background-color: #1b74e4;
+            color: white;
+        }
+        #checkBtn:hover { background-color: #1868cd; }
+        #checkBtn:active { transform: scale(0.98); }
+        #checkBtn:disabled { background-color: #ccd0d5; cursor: not-allowed; }
+        #results {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 18px;
+        }
+        #printBtn {
+            background-color: #31a24c;
+            color: white;
+            margin-top: 15px;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="trainer-container">
+        <h1>Математический тренажёр</h1>
+        <p>Решите 3 случайных примера за 10 минут</p>
+
+        <div class="info-bar">
+            <div class="progress-bar">
+                <div class="progress-square"></div>
+                <div class="progress-square"></div>
+                <div class="progress-square"></div>
+            </div>
+            <div id="timer">10:00</div>
+        </div>
+
+        <div id="problems-container">
+            </div>
+
+        <div class="actions">
+            <button id="checkBtn">Проверить</button>
+        </div>
+
+        <div id="results" class="hidden">
+            <p id="score-text"></p>
+            <button id="printBtn" class="hidden">Распечатать PDF с заданиями</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Утилиты для генерации ---
+        const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        
+        function isValid(num) {
+            const s = String(Math.abs(num));
+            if (s.length <= 1) return true;
+            if (num % 10 === 0) return false;
+
+            const counts = {};
+            let hasHighDigit = false;
+            for (const char of s) {
+                counts[char] = (counts[char] || 0) + 1;
+                if (counts[char] > 2) return false;
+                if (['7', '8', '9'].includes(char)) hasHighDigit = true;
+            }
+            return hasHighDigit;
+        }
+
+        function generateValidNumber(min, max, conditions = {}) {
+            let attempts = 0;
+            while (attempts < 500) {
+                attempts++;
+                let num = getRandomInt(min, max);
+                if (conditions.isC && num === 0) continue;
+
+                if (isValid(num)) {
+                    let passes = true;
+                    for (const key in conditions) {
+                        if (key === 'divisibleBy' && num % conditions[key] !== 0) {
+                            passes = false;
+                            break;
+                        }
+                    }
+                    if (passes) return num;
+                }
+            }
+            return null; 
+        }
+
+        function countCarries(num1, num2, isSubtraction = false) {
+             let s1 = String(Math.abs(num1)), s2 = String(Math.abs(num2));
+             if (s1 === '0' || s2 === '0') return 0;
+             let carries = 0, carry = 0;
+             const len = Math.max(s1.length, s2.length);
+             s1 = s1.padStart(len, '0');
+             s2 = s2.padStart(len, '0');
+             
+             if(isSubtraction && Number(s1) < Number(s2)) {
+                 [s1, s2] = [s2, s1]; // Ensure s1 is larger for borrow logic
+             }
+
+             for (let i = len - 1; i >= 0; i--) {
+                 let d1 = parseInt(s1[i]);
+                 let d2 = parseInt(s2[i]);
+                 if (isSubtraction) {
+                     d1 -= carry;
+                     carry = 0;
+                     if (d1 < d2) {
+                         carries++;
+                         carry = 1;
+                     }
+                 } else {
+                     const sum = d1 + d2 + carry;
+                     if (sum >= 10) {
+                         carries++;
+                         carry = 1;
+                     } else {
+                         carry = 0;
+                     }
+                 }
+             }
+             return carries;
+        }
+
+        // --- Определения типов заданий ---
+        const problemTypes = [
+            {
+                id: "Тип C1",
+                generator: () => {
+                    while (true) {
+                        const a1_1 = getRandomInt(4, 9);
+                        const a1_2 = getRandomInt(4, 9);
+                        const a4_1 = generateValidNumber(1000, 9999);
+                        if (!a4_1) continue;
+
+                        const P = a4_1 * a1_1;
+                        let a4_2;
+                        let attempts = 0;
+                        while(attempts < 100) {
+                            a4_2 = generateValidNumber(1000, 9999);
+                            if (a4_2 && (P > 5000 || a4_2 > 5000) && countCarries(P, a4_2) > 0 && (P + a4_2) % a1_2 === 0) break;
+                            a4_2 = null;
+                            attempts++;
+                        }
+                        if (!a4_2) continue;
+
+                        const term_in_paren = (P + a4_2) / a1_2;
+                        const a5_2 = generateValidNumber(10000, 99999);
+                        if (!a5_2) continue;
+                        
+                        const a45_1 = generateValidNumber(1000, 99999);
+                        if (!a45_1) continue;
+
+                        const answer = a45_1 + term_in_paren - a5_2;
+                        if (answer > 0) {
+                             const problemStr = `${a45_1} + (${a4_1} * ${a1_1} + ${a4_2}) : ${a1_2} - ${a5_2}`;
+                             return { problem: problemStr, answer };
+                        }
+                    }
+                }
+            },
+            {
+                id: "Тип C2",
+                generator: () => {
+                    while(true) {
+                        const a1_1 = getRandomInt(4, 9);
+                        const a1_2 = getRandomInt(4, 9);
+                        const a5 = generateValidNumber(50001, 99999, {divisibleBy: a1_2});
+                        if (!a5) continue;
+                        
+                        const Q = a5 / a1_2;
+                        const a45_2 = generateValidNumber(1000, Q - 1);
+                        if (!a45_2) continue;
+
+                        const S = Q - a45_2;
+                        const P = a1_1 * S;
+                        
+                        const a45_1 = generateValidNumber(P + 1, 99999);
+                        if (!a45_1) continue;
+
+                        const Part_A = a45_1 - P;
+                        const c3 = generateValidNumber(-999, 999, {isC: true});
+                        if (!c3 || Part_A + c3 <= 0 || c3 < -Part_A) continue;
+                        
+                        const answer = Part_A + c3;
+                        const c3_str = c3 > 0 ? `+ ${c3}` : `- ${Math.abs(c3)}`;
+                        const problemStr = `${a45_1} - ${a1_1} * (${a5} : ${a1_2} - ${a45_2}) ${c3_str}`;
+                        return { problem: problemStr, answer };
+                    }
+                }
+            },
+            {
+                id: "Тип C3",
+                 generator: () => {
+                     while(true) {
+                         const a1_1 = getRandomInt(4, 9);
+                         const a1_2 = getRandomInt(4, 9);
+                         const a34 = generateValidNumber(100, 999);
+                         if(!a34) continue;
+                         
+                         const P = a34 * a1_1;
+                         const a4 = generateValidNumber(P + 1, 9999);
+                         if(!a4) continue;
+                         
+                         const D = a4 - P;
+                         if (D <= 0) continue;
+                         
+                         const k_min = Math.ceil(10000 / D);
+                         const k_max = Math.floor(99999 / D);
+                         if (k_min > k_max) continue;
+                         
+                         let k, a5;
+                         let attempts = 0;
+                         while(attempts < 100) {
+                            k = getRandomInt(k_min, k_max);
+                            a5 = D * k;
+                            if (isValid(a5)) break;
+                            a5 = null;
+                            attempts++;
+                         }
+                         if (!a5) continue;
+                         
+                         const term1 = k;
+                         const term2 = a1_2 * a5;
+
+                         if (countCarries(term1, term2) > 0) {
+                             const problemStr = `${a5} : (${a4} - ${a34} * ${a1_1}) + ${a1_2} * ${a5}`;
+                             const answer = term1 + term2;
+                             return { problem: problemStr, answer };
+                         }
+                     }
+                 }
+            },
+             {
+                id: "Тип C4",
+                generator: () => {
+                    while (true) {
+                        const a1_1 = getRandomInt(4, 9);
+                        const a1_2 = getRandomInt(4, 9);
+                        const a5 = generateValidNumber(10000, 99999, {divisibleBy: a1_2});
+                        if (!a5) continue;
+
+                        const Q = a5 / a1_2;
+                        let c4, S;
+                        let attempts = 0;
+                        while(attempts < 100){
+                            c4 = generateValidNumber(1000, 9999, {isC: true});
+                            if (c4 && Q + c4 > 0 && countCarries(Q, c4, c4 < 0) > 0) {
+                                S = Q + c4;
+                                break;
+                            }
+                            S = null;
+                            attempts++;
+                        }
+                        if (S === null) continue;
+                        
+                        const a4 = generateValidNumber(Math.ceil((S+1)/a1_1), 9999);
+                        if (!a4) continue;
+                        const P = a4 * a1_1;
+                        const Part_A = P - S;
+                        if (Part_A <= 0) continue;
+
+                        const c34 = generateValidNumber(-9999, 9999, {isC: true});
+                        if (!c34 || Part_A + c34 <= 0) continue;
+                        
+                        const answer = Part_A + c34;
+                        const c4_str = c4 > 0 ? `+ ${c4}` : `- ${Math.abs(c4)}`;
+                        const c34_str = c34 > 0 ? `+ ${c34}` : `- ${Math.abs(c34)}`;
+
+                        const problemStr = `${a4} * ${a1_1} - (${a5} : ${a1_2} ${c4_str}) ${c34_str}`;
+                        return { problem: problemStr, answer };
+                    }
+                }
+            },
+            {
+                id: "Тип C5",
+                generator: () => {
+                    while (true) {
+                        const a1_1 = getRandomInt(4, 9), a1_2 = getRandomInt(4, 9), a1_3 = getRandomInt(4, 9);
+                        const a345 = generateValidNumber(100, 99999, {divisibleBy: a1_3});
+                        if (!a345) continue;
+                        const term2 = a345 / a1_3;
+
+                        const a5 = generateValidNumber(10000, 99999, {divisibleBy: a1_1});
+                        if (!a5) continue;
+                        const Q = a5 / a1_1;
+                        
+                        let a6 = generateValidNumber(100000, 999999);
+                        if (!a6 || a6 <= Q) continue;
+                        
+                        let D = a6 - Q;
+                        if (D % a1_2 !== 0) {
+                            const remainder = D % a1_2;
+                            let corrected_a6 = a6 + (a1_2 - remainder);
+                            if (!isValid(corrected_a6) || String(corrected_a6).length !== 6) {
+                                corrected_a6 = a6 - remainder;
+                                if (!isValid(corrected_a6) || String(corrected_a6).length !== 6) continue;
+                            }
+                            a6 = corrected_a6;
+                        }
+                        D = a6 - Q;
+                        const term1_result = D / a1_2;
+
+                        if (term1_result > term2) {
+                            const problemStr = `(${a6} - ${a5} : ${a1_1}) : ${a1_2} - ${a345} : ${a1_3}`;
+                            const answer = term1_result - term2;
+                            return { problem: problemStr, answer };
+                        }
+                    }
+                }
+            },
+             {
+                id: "Тип C6",
+                generator: () => {
+                     while(true) {
+                        const a1 = getRandomInt(4, 9);
+                        const Q = getRandomInt(4, 9);
+                        const a2 = a1 * Q;
+                        if (!isValid(a2) || a2 < 10 || a2 > 99) continue;
+                        
+                        const a34 = generateValidNumber(100, 9999);
+                        if (!a34) continue;
+                        
+                        let a56;
+                        let attempts = 0;
+                        while(attempts < 100) {
+                           a56 = generateValidNumber(10000, 999999);
+                           if(a56 && a56 > a34 && countCarries(a56, a34, true) > 0) break;
+                           a56 = null;
+                           attempts++;
+                        }
+                        if (!a56) continue;
+                        
+                        const D = a56 - a34;
+                        const a45 = generateValidNumber(1000, 99999);
+                        if (!a45) continue;
+
+                        const answer = D * Q + a1 * a45;
+                        const problemStr = `(${a56} - ${a34}) * (${a2} : ${a1}) + ${a1} * ${a45}`;
+                        return { problem: problemStr, answer };
+                     }
+                }
+            },
+            {
+                id: "Тип C7",
+                generator: () => {
+                    while (true) {
+                        const D = getRandomInt(4, 9);
+                        const a2 = generateValidNumber(11, 98);
+                        if (!a2) continue;
+                        const a3 = a2 + D;
+                        if (!isValid(a3) || a3 < 100 || a3 > 999) continue;
+                        
+                        let a1_1 = getRandomInt(4, 9);
+                        if (a1_1 % D === 0) continue;
+                        
+                        let a45;
+                        let attempts = 0;
+                        while(attempts < 100) {
+                            a45 = generateValidNumber(1000, 49999);
+                            if (a45 && (a1_1 * a45) % D === 0) break;
+                            a45 = null;
+                            attempts++;
+                        }
+                        if (!a45) continue;
+                        const term1 = (a1_1 * a45) / D;
+
+                        const a1_2 = getRandomInt(4, 9);
+                        const a5 = generateValidNumber(50001, 99999, {divisibleBy: a1_2});
+                        if (!a5) continue;
+                        const term2 = a5 / a1_2;
+
+                        if (term1 > term2) {
+                            const answer = term1 - term2;
+                            const problemStr = `${a1_1} * ${a45} : (${a3} - ${a2}) - ${a5} : ${a1_2}`;
+                            return { problem: problemStr, answer };
+                        }
+                    }
+                }
+            },
+            {
+                id: "Тип C8",
+                generator: () => {
+                    while (true) {
+                        const a1_1 = getRandomInt(4, 9), a1_2 = getRandomInt(4, 9);
+                        const a4 = generateValidNumber(1000, 9999);
+                        if(!a4) continue;
+                        const P = a4 * a1_1;
+                        
+                        let a5_1;
+                        let attempts = 0;
+                        while(attempts < 100) {
+                            a5_1 = generateValidNumber(P + 1, 99999);
+                            if (a5_1 && (a5_1 % 1000 < P % 1000)) break;
+                            a5_1 = null;
+                            attempts++;
+                        }
+                        if (!a5_1) continue;
+
+                        const S = a5_1 - P;
+                        const a5_2 = generateValidNumber(10000, 99999);
+                        if(!a5_2) continue;
+                        const P2 = a1_2 * a5_2;
+                        
+                        const a6_min = S + P2 + 1;
+                        const a6_start = Math.max(a6_min, 360000);
+                        const a6 = generateValidNumber(a6_start, 999999);
+                        if(!a6) continue;
+                        
+                        const answer = a6 - S - P2;
+                        const problemStr = `${a6} - (${a5_1} - ${a4} * ${a1_1}) - ${a1_2} * ${a5_2}`;
+                        return { problem: problemStr, answer };
+                    }
+                }
+            },
+            {
+                id: "Тип C9",
+                generator: () => {
+                    while(true){
+                        const D = getRandomInt(4, 9);
+                        const a3 = generateValidNumber(100, 999);
+                        if (!a3) continue;
+                        
+                        let a4_2;
+                        let attempts = 0;
+                        while(attempts < 100) {
+                            a4_2 = generateValidNumber(1000, 9999);
+                            if (a4_2 && a4_2 % 1000 === a3) break;
+                            a4_2 = null;
+                            attempts++;
+                        }
+                        if (!a4_2) continue;
+
+                        if (D * a4_2 <= a3) continue;
+
+                        const a1 = getRandomInt(4, 9);
+                        const a4_1 = generateValidNumber(1000, 9999);
+                        if (!a4_1) continue;
+                        
+                        const P = a1 * a4_1;
+                        const a5 = P - D;
+                        if (!isValid(a5) || String(a5).length !== 5) continue;
+                        
+                        const answer = D * a4_2 - a3;
+                        const problemStr = `(${a1} * ${a4_1} - ${a5}) * ${a4_2} - ${a3}`;
+                        return { problem: problemStr, answer };
+                    }
+                }
+            },
+            {
+                id: "Тип C10",
+                generator: () => {
+                     while(true) {
+                        const a1_1 = getRandomInt(4, 9), a1_2 = getRandomInt(4, 9), a1_3 = getRandomInt(4, 9);
+                        const a3 = generateValidNumber(100, 999);
+                        if(!a3) continue;
+                        const P = a3 * a1_1;
+                        
+                        let a4;
+                        let attempts = 0;
+                        while(attempts < 100) {
+                            a4 = generateValidNumber(1000, 9999);
+                            if (a4 && countCarries(a4, P) > 0) break;
+                            a4 = null;
+                            attempts++;
+                        }
+                        if (!a4) continue;
+                        
+                        const S = a4 + P;
+                        const term1 = S * a1_2;
+                        
+                        const a5 = generateValidNumber(10000, 99999, {divisibleBy: a1_3});
+                        if(!a5) continue;
+                        const term2 = a5 / a1_3;
+
+                        if (term1 > term2) {
+                            const answer = term1 - term2;
+                            const problemStr = `(${a4} + ${a3} * ${a1_1}) * ${a1_2} - ${a5} : ${a1_3}`;
+                            return { problem: problemStr, answer };
+                        }
+                     }
+                }
+            }
+        ];
+
+        // --- Логика тренажёра ---
+        const problemsContainer = document.getElementById('problems-container');
+        const checkBtn = document.getElementById('checkBtn');
+        const timerEl = document.getElementById('timer');
+        const progressSquares = document.querySelectorAll('.progress-square');
+        const resultsEl = document.getElementById('results');
+        const scoreTextEl = document.getElementById('score-text');
+        const printBtn = document.getElementById('printBtn');
+        let generatedProblems = [];
+        let timerInterval;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        function init() {
+            shuffleArray(problemTypes);
+            const selectedTypes = problemTypes.slice(0, 3);
+            generatedProblems = selectedTypes.map(type => {
+                try {
+                    return type.generator();
+                } catch (e) {
+                    console.error(`Ошибка при генерации типа ${type.id}:`, e);
+                    return { problem: "Ошибка генерации...", answer: 0 };
+                }
+            });
+
+            problemsContainer.innerHTML = '';
+            generatedProblems.forEach((p, index) => {
+                const problemEl = document.createElement('div');
+                problemEl.className = 'problem';
+                problemEl.innerHTML = `
+                    <span class="problem-text">${index + 1}. ${p.problem} =</span>
+                    <input type="number" class="answer-input">
+                `;
+                problemsContainer.appendChild(problemEl);
+            });
+            startTimer(600);
+        }
+
+        function startTimer(duration) {
+            const endTime = Date.now() + duration * 1000;
+            timerInterval = setInterval(() => {
+                const timeLeft = Math.round((endTime - Date.now()) / 1000);
+                if (timeLeft < 0) {
+                    clearInterval(timerInterval);
+                    timerEl.textContent = "Время вышло!";
+                    checkAnswers();
+                    return;
+                }
+                const minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+                timerEl.textContent = `${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        function checkAnswers() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            checkBtn.disabled = true;
+            const inputs = document.querySelectorAll('.answer-input');
+            let correctCount = 0;
+            inputs.forEach((input, index) => {
+                const userAnswer = parseInt(input.value, 10);
+                const correctAnswer = generatedProblems[index].answer;
+                generatedProblems[index].userAnswer = isNaN(userAnswer) ? 'нет ответа' : userAnswer;
+                if (userAnswer === correctAnswer) {
+                    progressSquares[index].classList.add('correct');
+                    correctCount++;
+                } else {
+                    progressSquares[index].classList.add('incorrect');
+                }
+                input.disabled = true;
+            });
+            scoreTextEl.textContent = `Вы решили правильно ${correctCount} из 3 примеров.`;
+            resultsEl.classList.remove('hidden');
+            printBtn.classList.remove('hidden');
+        }
+        
+        function printResults() {
+            let printContent = `
+                <style>
+                    body { font-family: Arial, sans-serif; }
+                    h1 { text-align: center; }
+                    .problem-item { margin-bottom: 20px; font-size: 16px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+                    .correct { color: green; }
+                    .incorrect { color: red; }
+                </style>
+                <h1>Результаты тренажёра</h1>
+            `;
+            generatedProblems.forEach((p, index) => {
+                const isCorrect = p.userAnswer === p.answer;
+                printContent += `
+                    <div class="problem-item">
+                        <p><b>Задание ${index + 1}:</b> ${p.problem}</p>
+                        <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${p.userAnswer}</span></p>
+                        <p><b>Правильный ответ:</b> ${p.answer}</p>
+                    </div>
+                `;
+            });
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        checkBtn.addEventListener('click', checkAnswers);
+        printBtn.addEventListener('click', printResults);
+        
+        init();
+    </script>
+</body>
+</html>
