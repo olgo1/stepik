@@ -131,24 +131,21 @@
         }
         .hidden { display: none; }
 
-        /* --- НОВЫЙ БЛОК: Стили для мобильных устройств --- */
+        /* --- Адаптация для мобильных устройств --- */
         @media (max-width: 600px) {
-            .problem {
-                flex-direction: column; /* Ставим элементы друг под друга */
-                align-items: flex-start; /* Выравниваем по левому краю */
-            }
-
-            .problem input {
-                width: 100%;          /* Поле для ответа на всю ширину */
-                margin-left: 0;       /* Убираем отступ слева */
-                margin-top: 10px;     /* Добавляем отступ сверху */
-                box-sizing: border-box; /* Чтобы ширина 100% учитывала рамки */
-            }
-            
             .trainer-container {
-                padding: 20px 25px; /* Уменьшаем боковые отступы на узких экранах */
+                padding: 20px 25px;
             }
-
+            .problem {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .problem input {
+                width: 100%;
+                margin-left: 0;
+                margin-top: 10px;
+                box-sizing: border-box;
+            }
             h1 {
                 font-size: 22px;
             }
@@ -189,7 +186,7 @@
         
         function isValid(num) {
             const s = String(Math.abs(num));
-            if (s.length <= 1) return true; 
+            if (s.length <= 1) return true;
             if (num % 10 === 0) return false;
 
             const counts = {};
@@ -283,13 +280,13 @@
                         const a5_2 = generateValidNumber(10000, 99999);
                         if (!a5_2) continue;
                         
-                        const a45_1 = generateValidNumber(term_in_paren + a5_2, 99999);
+                        const a45_1 = generateValidNumber(Math.floor(term_in_paren + a5_2) + 1, 99999);
                         if (!a45_1) continue;
 
                         const answer = a45_1 + term_in_paren - a5_2;
                         if (answer > 0) {
                              const problemStr = `${a45_1} + (${a4_1} * ${a1_1} + ${a4_2}) : ${a1_2} - ${a5_2}`;
-                             return { problem: problemStr, answer };
+                             return { problem: problemStr, answer: Math.round(answer) };
                         }
                     }
                 }
@@ -309,7 +306,7 @@
                         const S = Q - a45_2;
                         const P = a1_1 * S;
                         
-                        const a45_1 = generateValidNumber(P + 1, 99999);
+                        const a45_1 = generateValidNumber(Math.floor(P) + 1, 99999);
                         if (!a45_1) continue;
 
                         const Part_A = a45_1 - P;
@@ -319,7 +316,7 @@
                         const answer = Part_A + c3;
                         const c3_str = c3 >= 0 ? `+ ${c3}` : `- ${Math.abs(c3)}`;
                         const problemStr = `${a45_1} - ${a1_1} * (${a5} : ${a1_2} - ${a45_2}) ${c3_str}`;
-                        return { problem: problemStr, answer };
+                        return { problem: problemStr, answer: Math.round(answer) };
                     }
                 }
             },
@@ -359,7 +356,7 @@
                          if (countCarries(term1, term2) > 0) {
                              const problemStr = `${a5} : (${a4} - ${a34} * ${a1_1}) + ${a1_2} * ${a5}`;
                              const answer = term1 + term2;
-                             return { problem: problemStr, answer };
+                             return { problem: problemStr, answer: Math.round(answer) };
                          }
                      }
                  }
@@ -400,7 +397,7 @@
                         const c34_str = c34 >= 0 ? `+ ${c34}` : `- ${Math.abs(c34)}`;
 
                         const problemStr = `${a4} * ${a1_1} - (${a5} : ${a1_2} ${c4_str}) ${c34_str}`;
-                        return { problem: problemStr, answer };
+                        return { problem: problemStr, answer: Math.round(answer) };
                     }
                 }
             },
@@ -436,7 +433,7 @@
                         if (term1_result > term2) {
                             const problemStr = `(${a6} - ${a5} : ${a1_1}) : ${a1_2} - ${a345} : ${a1_3}`;
                             const answer = term1_result - term2;
-                            return { problem: problemStr, answer };
+                            return { problem: problemStr, answer: Math.round(answer) };
                         }
                     }
                 }
@@ -469,7 +466,7 @@
 
                         const answer = D * Q + a1 * a45;
                         const problemStr = `(${a56} - ${a34}) * (${a2} : ${a1}) + ${a1} * ${a45}`;
-                        return { problem: problemStr, answer };
+                        return { problem: problemStr, answer: Math.round(answer) };
                      }
                 }
             },
@@ -505,7 +502,7 @@
                         if (term1 > term2) {
                             const answer = term1 - term2;
                             const problemStr = `${a1_1} * ${a45} : (${a3} - ${a2}) - ${a5} : ${a1_2}`;
-                            return { problem: problemStr, answer };
+                            return { problem: problemStr, answer: Math.round(answer) };
                         }
                     }
                 }
@@ -541,7 +538,7 @@
                         
                         const answer = a6 - S - P2;
                         const problemStr = `${a6} - (${a5_1} - ${a4} * ${a1_1}) - ${a1_2} * ${a5_2}`;
-                        return { problem: problemStr, answer };
+                        return { problem: problemStr, answer: Math.round(answer) };
                     }
                 }
             },
@@ -571,11 +568,11 @@
                         
                         const P = a1 * a4_1;
                         const a5 = P - D;
-                        if (!isValid(a5) || String(a5).length !== 5) continue;
+                        if (!isValid(a5) || String(a5).length < 4 || String(a5).length > 5) continue;
                         
                         const answer = D * a4_2 - a3;
                         const problemStr = `(${a1} * ${a4_1} - ${a5}) * ${a4_2} - ${a3}`;
-                        return { problem: problemStr, answer };
+                        return { problem: problemStr, answer: Math.round(answer) };
                     }
                 }
             },
@@ -608,7 +605,7 @@
                         if (term1 > term2) {
                             const answer = term1 - term2;
                             const problemStr = `(${a4} + ${a3} * ${a1_1}) * ${a1_2} - ${a5} : ${a1_3}`;
-                            return { problem: problemStr, answer };
+                            return { problem: problemStr, answer: Math.round(answer) };
                         }
                      }
                 }
@@ -637,7 +634,7 @@
             shuffleArray(problemTypes);
             const selectedTypes = problemTypes.slice(0, 3);
             
-            document.querySelector('h1 + p').textContent = `Решите 3 примера (${selectedTypes.map(t=>t.id).join(', ')}) за 10 минут`;
+            document.querySelector('h1 + p').textContent = `Решите 3 случайных примера за 10 минут`;
 
             generatedProblems = selectedTypes.map(type => {
                 try {
@@ -675,7 +672,7 @@
                  if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     timerEl.textContent = "Время вышло!";
-                    checkAnswers();
+                    if (!checkBtn.disabled) checkAnswers();
                  }
             }
 
