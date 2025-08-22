@@ -77,6 +77,7 @@
         }
         .problem-text {
             flex-grow: 1;
+            line-height: 1.4;
         }
         .problem input {
             width: 150px;
@@ -129,6 +130,26 @@
             margin-top: 15px;
         }
         .hidden { display: none; }
+
+        /* --- Адаптация для мобильных устройств --- */
+        @media (max-width: 600px) {
+            .trainer-container {
+                padding: 20px 25px;
+            }
+            .problem {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .problem input {
+                width: 100%;
+                margin-left: 0;
+                margin-top: 10px;
+                box-sizing: border-box;
+            }
+            h1 {
+                font-size: 22px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -225,7 +246,7 @@
             {
                 id: "Б2",
                 generator: () => {
-                     while(true){
+                    while(true){
                         const a1 = [4, 5][getRandomInt(0, 1)];
                         const c1 = getRandomInt(4, 9);
                         const a4 = getRandomInt(Math.ceil(20000 / c1) + 1, 9999);
@@ -251,7 +272,7 @@
             {
                 id: "Б3",
                 generator: () => {
-                     while(true){
+                    while(true){
                         const a1_1 = getRandomInt(4, 9);
                         const a1_2 = [4,5,6,7,8,9].filter(n => n !== a1_1)[0];
                         const c3_div = getRandomInt(Math.ceil(501/a1_2), Math.floor(999/a1_2));
@@ -275,7 +296,7 @@
             },
             {
                 id: "Б4",
-                 generator: () => {
+                generator: () => {
                     while (true) {
                         const a1_1 = getRandomInt(4, 9);
                         const a1_2 = getRandomInt(4, 9);
@@ -300,13 +321,13 @@
                 id: "Б5",
                 generator: () => {
                     while (true) {
-                         const a1 = getRandomInt(4, 9);
-                         const a5_2 = getRandomInt(10000, 20000);
-                         const a6 = a5_2 + getRandomInt(1,5) * 1000 + 80000;
-                         let term1, a5_1;
-                         let found = false;
-                         let attempts = 0;
-                         while(attempts < 500){
+                        const a1 = getRandomInt(4, 9);
+                        const a5_2 = getRandomInt(10000, 20000);
+                        const a6 = a5_2 + getRandomInt(1,5) * 1000 + 80000;
+                        let term1, a5_1;
+                        let found = false;
+                        let attempts = 0;
+                        while(attempts < 500){
                             const min_a5_1 = Math.ceil((a6 + a5_2 + 1)/a1);
                             if (min_a5_1 > 99999) break;
                             a5_1 = getRandomInt(min_a5_1, 99999);
@@ -316,20 +337,20 @@
                                 break;
                             }
                             attempts++;
-                         }
-                         if(!found) continue;
-                         const diff1 = term1 - a6;
-                         if(diff1 <= a5_2) continue;
-                         const problemStr = `${a1} * ${a5_1} - ${a6} - ${a5_2}`;
-                         const answer = diff1 - a5_2;
-                         return { problem: problemStr, answer };
+                        }
+                        if(!found) continue;
+                        const diff1 = term1 - a6;
+                        if(diff1 <= a5_2) continue;
+                        const problemStr = `${a1} * ${a5_1} - ${a6} - ${a5_2}`;
+                        const answer = diff1 - a5_2;
+                        return { problem: problemStr, answer };
                     }
                 }
             },
             {
-                 id: "Б6",
-                 generator: () => {
-                     while(true){
+                id: "Б6",
+                generator: () => {
+                    while(true){
                         const a1_3 = 6;
                         const a1_2 = [4, 5, 7, 8][getRandomInt(0,3)];
                         const a1_1 = [4,5,7,8,9].filter(n => n !== a1_2 && n !== a1_3)[0];
@@ -347,41 +368,41 @@
                         const problemStr = `${a1_1} * ${a5} + ${c4} * ${a1_2} : ${a1_3}`;
                         const answer = term1 + term2;
                         return { problem: problemStr.replace(/\+ -/g, '- '), answer };
-                     }
-                 }
+                    }
+                }
             },
             {
-                 id: "Б7",
-                 generator: () => {
-                     while(true){
-                         const a1_1 = getRandomInt(4, 9);
-                         const a1_2 = getRandomInt(3, 9);
-                         const term3_mult = a1_1 * a1_2;
-                         const c4_2 = getRandomInt(Math.ceil(1000/term3_mult), Math.floor(9999/term3_mult)) * term3_mult;
-                         const term3 = c4_2 / term3_mult;
-                         let a5, c4_1;
-                         do {
+                id: "Б7",
+                generator: () => {
+                    while(true){
+                        const a1_1 = getRandomInt(4, 9);
+                        const a1_2 = getRandomInt(3, 9);
+                        const term3_mult = a1_1 * a1_2;
+                        const c4_2 = getRandomInt(Math.ceil(1000/term3_mult), Math.floor(9999/term3_mult)) * term3_mult;
+                        const term3 = c4_2 / term3_mult;
+                        let a5, c4_1;
+                        do {
                             a5 = getRandomInt(10000, 99999);
                             c4_1 = getRandomInt(1000, 9999);
-                         } while(countCarries(a5, c4_1, false) < 2);
-                         const sum1 = a5 + c4_1;
-                         if(sum1 <= 0 || sum1 + term3 <= 0) continue;
-                         const problemStr = `${a5} + ${c4_1} + ${c4_2} : ${a1_1} : ${a1_2}`;
-                         const answer = sum1 + term3;
-                         return { problem: problemStr.replace(/\+ -/g, '- '), answer };
-                     }
-                 }
+                        } while(countCarries(a5, c4_1, false) < 2);
+                        const sum1 = a5 + c4_1;
+                        if(sum1 <= 0 || sum1 + term3 <= 0) continue;
+                        const problemStr = `${a5} + ${c4_1} + ${c4_2} : ${a1_1} : ${a1_2}`;
+                        const answer = sum1 + term3;
+                        return { problem: problemStr.replace(/\+ -/g, '- '), answer };
+                    }
+                }
             },
             {
-                 id: "Б8",
-                 generator: () => {
-                     while(true){
-                         const a1_1 = getRandomInt(4, 9);
-                         const a1_2 = getRandomInt(4, 9);
-                         let term1, term2, a5, a4;
-                         let found = false;
-                         let attempts = 0;
-                         while(attempts < 500){
+                id: "Б8",
+                generator: () => {
+                    while(true){
+                        const a1_1 = getRandomInt(4, 9);
+                        const a1_2 = getRandomInt(4, 9);
+                        let term1, term2, a5, a4;
+                        let found = false;
+                        let attempts = 0;
+                        while(attempts < 500){
                             a4 = getRandomInt(1000, 8000);
                             term2 = a4 * a1_2;
                             const min_a5_quotient = Math.ceil((term2+1)/a1_1);
@@ -395,38 +416,38 @@
                                 break;
                             }
                             attempts++;
-                         }
-                         if(!found) continue;
-                         const diff1 = term1 - term2;
-                         const c5 = getRandomInt(10000, 99999);
-                         const problemStr = `${a5} : ${a1_1} - ${a4} * ${a1_2} + ${c5}`;
-                         const answer = diff1 + c5;
-                         return { problem: problemStr.replace(/\+ -/g, '- '), answer };
-                     }
-                 }
+                        }
+                        if(!found) continue;
+                        const diff1 = term1 - term2;
+                        const c5 = getRandomInt(10000, 99999);
+                        const problemStr = `${a5} : ${a1_1} - ${a4} * ${a1_2} + ${c5}`;
+                        const answer = diff1 + c5;
+                        return { problem: problemStr.replace(/\+ -/g, '- '), answer };
+                    }
+                }
             },
-             {
-                 id: "Б9",
-                 generator: () => {
-                     while(true){
-                         const a1 = getRandomInt(1, 9);
-                         const term1_div = getRandomInt(4, 9);
-                         const a2 = term1_div * a1;
-                         if(a2 < 10 || a2 > 99) continue;
-                         const c5 = getRandomInt(10000, 99999);
-                         let a5;
-                         do {
+            {
+                id: "Б9",
+                generator: () => {
+                    while(true){
+                        const a1 = getRandomInt(1, 9);
+                        const term1_div = getRandomInt(4, 9);
+                        const a2 = term1_div * a1;
+                        if(a2 < 10 || a2 > 99) continue;
+                        const c5 = getRandomInt(10000, 99999);
+                        let a5;
+                        do {
                             a5 = getRandomInt(10000, 99999);
-                         } while ( (a5 - Math.abs(c5)) <= 100 || ((a5 - Math.abs(c5)) % 10 === 0) );
-                         const a4 = getRandomInt(1000, 9999);
-                         const term1 = term1_div * a4;
-                         const sum1 = term1 + c5;
-                         if(sum1 <= a5) continue;
-                         const problemStr = `${a2} : ${a1} * ${a4} + ${c5} - ${a5}`;
-                         const answer = sum1 - a5;
-                         return { problem: problemStr.replace(/\+ -/g, '- '), answer };
-                     }
-                 }
+                        } while ( (a5 - Math.abs(c5)) <= 100 || ((a5 - Math.abs(c5)) % 10 === 0) );
+                        const a4 = getRandomInt(1000, 9999);
+                        const term1 = term1_div * a4;
+                        const sum1 = term1 + c5;
+                        if(sum1 <= a5) continue;
+                        const problemStr = `${a2} : ${a1} * ${a4} + ${c5} - ${a5}`;
+                        const answer = sum1 - a5;
+                        return { problem: problemStr.replace(/\+ -/g, '- '), answer };
+                    }
+                }
             },
             {
                 id: "Б10",
