@@ -209,15 +209,15 @@
                     let n3 = getRandomInt(1001, 9996);
                     if (n3 % 10 === 0) n3 += 3;
 
-                    const n2 = getRandomInt(10000, 99999);
+                    const a2 = getRandomInt(10000, 99999);
                     const a1 = getRandomInt(4, 9);
                     
                     let k = getRandomInt(1001, 9998);
                     if (k % 10 === 0) k++;
                     
-                    const a4 = k * a1 + n3 - n2;
+                    const a4 = k * a1 + n3 - a2;
                     const answer = k;
-                    const problemStr = `x * ${a1} - ${n2} + ${n3} = ${a4}`;
+                    const problemStr = `x * ${a1} - ${a2} + ${n3} = ${a4}`;
                     return { problem: problemStr, answer: answer };
                 }
             },
@@ -232,11 +232,10 @@
                         const n1 = n4 + n5 + k;
                         
                         const remainder = n1 % 10000;
-                        let start = Math.ceil(10000 / k) * k; 
                         
                         let n2_options = [];
-                        for(let base = 10000; base < 99999; base += 10000) {
-                            let potential_n2 = base + remainder;
+                        for(let i = 1; i < 10; i++) {
+                            let potential_n2 = i * 10000 + remainder;
                             if (potential_n2 > 10000 && potential_n2 < 99999 && potential_n2 % k === 0) {
                                 n2_options.push(potential_n2);
                             }
@@ -254,21 +253,27 @@
             {
                 id: "Тип E5",
                 generator: () => {
-                    let n4 = getRandomInt(10001, 99998);
-                    if (n4 % 10 === 0) n4++;
+                    while(true){
+                        let n4 = getRandomInt(10001, 99998);
+                        if (n4 % 10 === 0) n4++;
 
-                    let n3 = getRandomInt(1001, Math.floor(n4 / 2) - 1);
-                    if (n3 % 10 === 0) n3 += 2;
+                        let n3 = getRandomInt(1001, Math.floor(n4 / 2) - 1);
+                        if (n3 % 10 === 0) n3 += 2;
 
-                    const n1 = getRandomInt(4, 9);
+                        const n1 = getRandomInt(4, 9);
 
-                    let k = getRandomInt(10001, 49998);
-                    if (k % 10 === 0) k += 2;
+                        // Ensure n2 will be positive
+                        const k_min = Math.max(10001, Math.ceil((n4 - n3) / n1) + 1);
+                        if (k_min >= 50000) continue;
 
-                    const n2 = k * n1 + n3 - n4;
-                    const answer = k;
-                    const problemStr = `x * ${n1} - ${n2} + ${n3} = ${n4}`;
-                    return { problem: problemStr, answer: answer };
+                        let k = getRandomInt(k_min, 49998);
+                        if (k % 10 === 0) k += 2;
+
+                        const n2 = k * n1 + n3 - n4;
+                        const answer = k;
+                        const problemStr = `x * ${n1} - ${n2} + ${n3} = ${n4}`;
+                        return { problem: problemStr, answer: answer };
+                    }
                 }
             },
             {
@@ -287,9 +292,9 @@
                     const p5_max = Math.floor(10 / p1 + 1);
                     const p5 = getRandomInt(3, p5_max);
                     
-                    const answer = (n4 - n3) * p5 / p1;
+                    const answer = (p2 - p3) * p5;
                     const problemStr = `${p1} * x : ${p5} + ${n3} = ${n4}`;
-                    return { problem: problemStr, answer: Math.round(answer) };
+                    return { problem: problemStr, answer: answer };
                 }
             },
             {
@@ -321,11 +326,16 @@
                         const n3 = getRandomInt(10000, 99999);
                         const n4 = n3 + k * n2;
 
-                        const p_start = Math.ceil(5000 / n2) * n2;
+                        const p_start = Math.ceil(5001 / n2) * n2;
                         let p_options = [];
                         for (let p_candidate = p_start; p_candidate < 10000; p_candidate += n2) {
                             if (p_candidate % 10 !== 0) {
                                 p_options.push(p_candidate);
+                            } else {
+                                let p_next = p_candidate + 1;
+                                if (p_next % n2 !== 0 && p_next < 10000) {
+                                    // This case is too complex, just skip multiples of 10
+                                }
                             }
                         }
                         
@@ -366,26 +376,23 @@
                         let n2 = getRandomInt(11001, 99998);
                         if (n2 % 10 === 0) n2 += 2;
 
-                        // Find a suitable n3
-                        const diff_start = 11001 - n2;
-                        let n3_options = [];
-                        for(let i = 0; i < 200; i++) { // Try 200 times to find a match
-                            let n3 = getRandomInt(11001, 99998);
-                            if (n3 % 10 === 0) n3 += 3;
-                            if ((n3 - n2) % n1 === 0) {
-                                n3_options.push(n3);
+                        let n3;
+                        for(let i = 0; i < 100; i++) { // Try 100 times to find a suitable n3
+                            let temp_n3 = getRandomInt(11001, 99998);
+                            if (temp_n3 % 10 === 0) temp_n3 += 3;
+                            if ((temp_n3 - n2) % n1 === 0) {
+                                n3 = temp_n3;
                                 break;
                             }
                         }
                         
-                        if(n3_options.length > 0) {
-                            const n3 = n3_options[0];
+                        if(n3) {
                             const n5 = (n3 - n2) / n1 + 10000;
-                            
-                            if (n5 > 98998) continue; // Range for k would be invalid
+                            if (n5 >= 98999) continue; 
 
                             let k = getRandomInt(n5 + 1, 98999);
                             if (k % 10 === 0) k += 4;
+                            if (k >= 99000) continue;
                             
                             const n4 = n1 * k + n3 - n2;
                             const answer = k;
@@ -423,9 +430,9 @@
                     return type.generator();
                 } catch (e) {
                     console.error(`Ошибка при генерации типа ${type.id}:`, e);
-                    // Fallback to another generator if one fails
+                    // Fallback to a simpler, reliable generator if one fails
                     try {
-                        return problemTypes[0].generator();
+                        return problemTypes[1].generator(); // Fallback to E2
                     } catch (e2) {
                          return { problem: "Ошибка генерации...", answer: 0 };
                     }
@@ -438,7 +445,7 @@
                 problemEl.className = 'problem';
                 problemEl.innerHTML = `
                     <span class="problem-text">${index + 1}. ${p.problem}</span>
-                    <input type="number" class="answer-input">
+                    <input type="number" class="answer-input" placeholder="x = ?">
                 `;
                 problemsContainer.appendChild(problemEl);
             });
