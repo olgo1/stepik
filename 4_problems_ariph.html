@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажёр по решению задач</title>
+    <style>
+        /* Стили остаются точно такими же, как в предыдущем тренажере для единообразного вида */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .trainer-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 25px 35px;
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            text-align: center;
+            color: #1c1e21;
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+        h1 + p {
+            text-align: center;
+            color: #606770;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #f7f8fa;
+            border-radius: 8px;
+        }
+        .progress-bar {
+            display: flex;
+            gap: 10px;
+        }
+        .progress-square {
+            width: 28px;
+            height: 28px;
+            background-color: #e4e6eb;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
+        }
+        .progress-square.correct { background-color: #31a24c; }
+        .progress-square.incorrect { background-color: #e02c4d; }
+        #timer {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1c1e21;
+            background-color: #e4e6eb;
+            padding: 5px 15px;
+            border-radius: 18px;
+        }
+        .problem {
+            display: flex;
+            align-items: flex-start; /* Изменено для длинных текстов */
+            margin-bottom: 20px;
+            font-size: 16px; /* Немного уменьшен для текста */
+        }
+        .problem-text {
+            flex-grow: 1;
+            line-height: 1.5; /* Увеличен для читаемости */
+            margin-right: 15px;
+        }
+        .problem input {
+            width: 150px;
+            padding: 10px;
+            border: 2px solid #ccd0d5;
+            border-radius: 6px;
+            font-size: 18px;
+            text-align: right;
+            margin-left: 15px;
+            transition: border-color 0.2s ease;
+            -moz-appearance: textfield;
+        }
+        .problem input::-webkit-outer-spin-button,
+        .problem input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .problem input:focus {
+            outline: none;
+            border-color: #1b74e4;
+        }
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .actions button {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        #checkBtn {
+            background-color: #1b74e4;
+            color: white;
+        }
+        #checkBtn:hover { background-color: #1868cd; }
+        #checkBtn:active { transform: scale(0.98); }
+        #checkBtn:disabled { background-color: #ccd0d5; cursor: not-allowed; }
+        #results {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 18px;
+        }
+        #printBtn {
+            background-color: #31a24c;
+            color: white;
+            margin-top: 15px;
+        }
+        .hidden { display: none; }
+
+        @media (max-width: 600px) {
+            .trainer-container { padding: 20px 25px; }
+            .problem { flex-direction: column; align-items: flex-start; }
+            .problem-text { margin-right: 0; }
+            .problem input { width: 100%; margin-left: 0; margin-top: 10px; box-sizing: border-box; }
+            h1 { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="trainer-container">
+        <h1>Тренажёр по решению задач</h1>
+        <p>Решите 3 случайных задачи за 10 минут</p>
+
+        <div class="info-bar">
+            <div class="progress-bar">
+                <div class="progress-square"></div>
+                <div class="progress-square"></div>
+                <div class="progress-square"></div>
+            </div>
+            <div id="timer">10:00</div>
+        </div>
+
+        <div id="problems-container"></div>
+
+        <div class="actions">
+            <button id="checkBtn">Проверить</button>
+        </div>
+
+        <div id="results" class="hidden">
+            <p id="score-text"></p>
+            <button id="printBtn" class="hidden">Распечатать PDF с заданиями</button>
+        </div>
+    </div>
+
+    <script>
+        // --- НАЧАЛО БЛОКА С ЗАДАЧАМИ ---
+
+        const allTasks = [
+          {
+            "name": "книга",
+            "number": 1,
+            "text": "Серёжа читает сразу две книги. В первой книге осталось прочитать ещё 130 страниц, а во второй 178 страниц. Первую книгу Серёжа дочитает на 4 часа быстрее, чем вторую. Через сколько часов он дочитает обе эти книги?",
+            "answer": 10
+          },
+          {
+            "name": "книга",
+            "number": 2,
+            "text": "Серёжа читает сразу две книги. В первой книге осталось прочитать на 48 страниц больше, чем во второй. Первую книгу Серёжа дочитает через 6 часов, а вторую через 10 часов. Сколько всего страниц ему осталось прочитать?",
+            "answer": 312
+          },
+          {
+            "name": "марафон по бегу",
+            "number": 1,
+            "text": "В забеге некоторые спортсмены бежали марафон длиной 42 км 200 м, а некоторые - полумарафон, который в два раза короче. Спортсмены, бежавшие полумарафон, вместе пробежали 464 км 200 м. А вообще все спортсмены пробежали вместе 1279 км 600 м. Сколько спортсменов участвовало в забеге?",
+            "answer": 41
+          },
+          {
+            "name": "марафон по бегу",
+            "number": 2,
+            "text": "В забеге некоторые спортсмены бежали марафон длиной 42 км 200 м, а некоторые - полумарафон, который в два раза короче. Спортсмены, бежавшие марафон, вместе пробежали 815 км 400 м. А вообще все спортсмены пробежали вместе 1279 км 600 м. Сколько спортсменов участвовало в забеге?",
+            "answer": 41
+          },
+          {
+            "name": "марафон по бегу",
+            "number": 3,
+            "text": "В забеге некоторые спортсмены бежали марафон длиной 42 км 200 м, а некоторые - полумарафон, который в два раза короче. Спортсмены, бежавшие марафон, вместе пробежали 815 км 400 м. А вообще все спортсмены пробежали вместе 1279 км 600 м. На сколько больше спортсменов бежали полумарафон, чем марафон?",
+            "answer": 3
+          },
+          {
+            "name": "пирожки в столовой",
+            "number": 1,
+            "text": "В столовой испекли 203 пирожков трёх видов: с малиной, с капустой, с картошкой. С малиной и картошкой 108 пирожков, с капустой и картошкой 157 пирожков. Сколько испекли пирожков с малиной?",
+            "answer": 46
+          },
+          {
+            "name": "пирожки в столовой",
+            "number": 2,
+            "text": "В столовой испекли 203 пирожков трёх видов: с малиной, с капустой, с картошкой. С малиной и картошкой 108 пирожков, с капустой на 49 пирожков больше, чем с малиной. Сколько испекли пирожков с картошкой?",
+            "answer": 62
+          },
+          {
+            "name": "коробка конфет",
+            "number": 1,
+            "text": "Коробка, в которую укладывают конфеты, стоит 58 рублей. Если в коробку положить конфеты в 7 рядов по 8 конфет в каждом ряду, то этот набор будет стоить 448 + 58 = 506 рублей. Сколько будет стоить набор, если в ту же коробку положить конфеты в 4 рядов по 9 конфеты в каждом ряду?",
+            "answer": 346
+          },
+          {
+            "name": "коробка конфет",
+            "number": 2,
+            "text": "Если в коробку положить конфеты в 7 рядов по 8 конфет в каждом ряду, то набор будет стоить 448 + 58 = 506 рублей. А если в такую же коробку положить конфеты в 4 рядов по 9 конфеты в каждом ряду, то набор будет стоить 288 + 58 = 346 рублей. Сколько стоит коробка?",
+            "answer": 58
+          }
+        ];
+
+        // --- КОНЕЦ БЛОКА С ЗАДАЧАМИ ---
+
+
+        const problemsContainer = document.getElementById('problems-container');
+        const checkBtn = document.getElementById('checkBtn');
+        const timerEl = document.getElementById('timer');
+        const progressSquares = document.querySelectorAll('.progress-square');
+        const resultsEl = document.getElementById('results');
+        const scoreTextEl = document.getElementById('score-text');
+        const printBtn = document.getElementById('printBtn');
+        let generatedProblems = [];
+        let timerInterval;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function selectTasks() {
+            // 1. Группируем задачи по названию
+            const tasksByName = allTasks.reduce((acc, task) => {
+                if (!acc[task.name]) {
+                    acc[task.name] = [];
+                }
+                acc[task.name].push(task);
+                return acc;
+            }, {});
+
+            // 2. Получаем массив уникальных названий и перемешиваем его
+            const uniqueNames = shuffleArray(Object.keys(tasksByName));
+            
+            // 3. Выбираем первые 3 уникальных названия
+            const selectedNames = uniqueNames.slice(0, 3);
+            
+            if (selectedNames.length < 3) {
+                console.error("Недостаточно типов задач для выбора 3-х уникальных.");
+                // Можно добавить отображение ошибки пользователю
+                problemsContainer.innerHTML = "Ошибка: недостаточно разнообразных задач в базе.";
+                return [];
+            }
+
+            // 4. Из каждой группы с выбранным названием берем одну случайную задачу
+            const selectedTasks = selectedNames.map(name => {
+                const group = tasksByName[name];
+                const randomIndex = Math.floor(Math.random() * group.length);
+                return group[randomIndex];
+            });
+
+            return selectedTasks;
+        }
+
+        function init() {
+            generatedProblems = selectTasks();
+            
+            if (generatedProblems.length === 0) return;
+
+            problemsContainer.innerHTML = '';
+            generatedProblems.forEach((p, index) => {
+                const problemEl = document.createElement('div');
+                problemEl.className = 'problem';
+                // Отображаем номер и текст задачи
+                problemEl.innerHTML = `
+                    <div class="problem-text"><b>Задача ${index + 1} (Тип: ${p.name}, №${p.number}):</b><br>${p.text}</div>
+                    <input type="number" class="answer-input" placeholder="Ответ?">
+                `;
+                problemsContainer.appendChild(problemEl);
+            });
+            startTimer(600); // 10 минут = 600 секунд
+        }
+
+        function startTimer(duration) {
+            clearInterval(timerInterval);
+            const endTime = Date.now() + duration * 1000;
+            
+            const updateDisplay = () => {
+                const timeLeft = Math.max(0, Math.round((endTime - Date.now()) / 1000));
+                const minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+                timerEl.textContent = `${minutes}:${seconds}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerEl.textContent = "Время вышло!";
+                    if (!checkBtn.disabled) checkAnswers();
+                }
+            }
+
+            updateDisplay();
+            timerInterval = setInterval(updateDisplay, 1000);
+        }
+
+        function checkAnswers() {
+            if (timerInterval) clearInterval(timerInterval);
+            checkBtn.disabled = true;
+            const inputs = document.querySelectorAll('.answer-input');
+            let correctCount = 0;
+            inputs.forEach((input, index) => {
+                const userAnswer = parseInt(input.value, 10);
+                const correctAnswer = generatedProblems[index].answer;
+                generatedProblems[index].userAnswer = isNaN(userAnswer) ? 'нет ответа' : userAnswer;
+                if (userAnswer === correctAnswer) {
+                    progressSquares[index].classList.add('correct');
+                    correctCount++;
+                } else {
+                    progressSquares[index].classList.add('incorrect');
+                }
+                input.disabled = true;
+            });
+            scoreTextEl.textContent = `Вы решили правильно ${correctCount} из 3 задач.`;
+            resultsEl.classList.remove('hidden');
+            printBtn.classList.remove('hidden');
+        }
+        
+        function printResults() {
+            let printContent = `
+                <style>
+                    body { font-family: Arial, sans-serif; }
+                    h1 { text-align: center; }
+                    .problem-item { margin-bottom: 20px; font-size: 16px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+                    .correct { color: green; font-weight: bold; }
+                    .incorrect { color: red; font-weight: bold; }
+                    .problem-text-print { white-space: pre-wrap; } /* Для сохранения переносов строк в тексте задачи */
+                </style>
+                <h1>Результаты тренажёра</h1>
+            `;
+            generatedProblems.forEach((p, index) => {
+                const isCorrect = p.userAnswer === p.answer;
+                printContent += `
+                    <div class="problem-item">
+                        <p><b>Задание ${index + 1} (Тип: ${p.name}, №${p.number}):</b></p>
+                        <p class="problem-text-print">${p.text}</p>
+                        <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${p.userAnswer}</span></p>
+                        <p><b>Правильный ответ:</b> ${p.answer}</p>
+                    </div>
+                `;
+            });
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        checkBtn.addEventListener('click', checkAnswers);
+        printBtn.addEventListener('click', printResults);
+        
+        // Запускаем тренажёр
+        if (allTasks.length > 0) {
+            init();
+        } else {
+            problemsContainer.innerHTML = "База задач пуста. Пожалуйста, добавьте задачи в код.";
+            checkBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>
