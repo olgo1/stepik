@@ -290,9 +290,9 @@
             generatedProblems.forEach((p, index) => {
                 const problemEl = document.createElement('div');
                 problemEl.className = 'problem';
-                // ✅ ИЗМЕНЕНИЕ: убран placeholder="Ответ?"
+                // ✅ ИЗМЕНЕНИЕ: убраны название и номер задачи из шаблона
                 problemEl.innerHTML = `
-                    <div class="problem-text"><b>Задача ${index + 1} (Тип: ${p.name}, №${p.number}):</b><br>${p.text}</div>
+                    <div class="problem-text"><b>Задача ${index + 1}:</b><br>${p.text}</div>
                     <input type="number" class="answer-input">
                 `;
                 problemsContainer.appendChild(problemEl);
@@ -358,9 +358,10 @@
             `;
             generatedProblems.forEach((p, index) => {
                 const isCorrect = p.userAnswer === p.answer;
+                // ✅ ИЗМЕНЕНИЕ: убраны название и номер задачи из шаблона для печати
                 printContent += `
                     <div class="problem-item">
-                        <p><b>Задание ${index + 1} (Тип: ${p.name}, №${p.number}):</b></p>
+                        <p><b>Задание ${index + 1}:</b></p>
                         <p class="problem-text-print">${p.text}</p>
                         <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${p.userAnswer}</span></p>
                         <p><b>Правильный ответ:</b> ${p.answer}</p>
