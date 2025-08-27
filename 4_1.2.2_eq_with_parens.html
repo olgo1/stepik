@@ -93,13 +93,6 @@
             text-align: right;
             margin-left: 15px;
             transition: border-color 0.2s ease;
-            -moz-appearance: textfield; /* Для Firefox */
-        }
-        /* --- Убираем стрелки в полях для чисел --- */
-        .problem input::-webkit-outer-spin-button,
-        .problem input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
         }
         .problem input:focus {
             outline: none;
@@ -164,7 +157,7 @@
 
     <div class="trainer-container">
         <h1>Тренажёр уравнений</h1>
-        <p>Решите уравнения и впишите ответ</p>
+        <p>Уравнения со скобками и без</p>
 
         <div class="info-bar">
             <div class="progress-bar">
@@ -198,291 +191,194 @@
             {
                 id: "УС1",
                 generator: () => {
-                    while (true) {
-                        let k = getRandomInt(501, 999);
-                        if (k % 10 === 0) k += 1;
-                        const n1 = getRandomInt(4, 9);
-                        let n4 = getRandomInt(1001, 99998);
-                        if (n4 % 10 === 0) n4 += 2;
-                        const n5 = k * n1 + n4;
-                        let n3 = getRandomInt(501, 998);
-                        if (n3 % 10 === 0) n3 += 3;
-                        const n2 = getRandomInt(4, 9);
+                    let k = getRandomInt(501, 999);
+                    if (k % 10 === 0) k += 1;
+                    const n1 = getRandomInt(4, 9);
+                    let n4 = getRandomInt(1001, 99998);
+                    if (n4 % 10 === 0) n4 += 2;
+                    const n5 = k * n1 + n4;
+                    let n3 = getRandomInt(501, 998);
+                    if (n3 % 10 === 0) n3 += 3;
+                    const n2 = getRandomInt(4, 9);
 
-                        // Решаем уравнение: n1 * (x / n2 - n3) + n4 = n5
-                        // x = ((n5 - n4) / n1 + n3) * n2
-                        const term1 = n5 - n4;
-                        if (term1 % n1 !== 0) continue;
-                        const term2 = term1 / n1;
-                        const answer = (term2 + n3) * n2;
-                        if (!Number.isInteger(answer)) continue;
-
-                        const problemStr = `${n1} * (x : ${n2} - ${n3}) + ${n4} = ${n5}`;
-                        return { problem: problemStr, answer };
-                    }
+                    const answer = ((n5 - n4) / n1 + n3) * n2;
+                    const problemStr = `${n1} * (x : ${n2} - ${n3}) + ${n4} = ${n5}`;
+                    return { problem: problemStr, answer };
                 }
             },
             {
                 id: "УС2",
                 generator: () => {
-                    while (true) {
-                        let n4 = getRandomInt(501, 999);
-                        if (n4 % 10 === 0) n4 += 1;
-                        let n5 = getRandomInt(1001, 9998);
-                        if (n5 % 10 === 0) n5 += 2;
-                        const n3 = getRandomInt(4, 9);
-                        const k = getRandomInt(4, 9);
-                        const n2 = (n4 + n5) * n3 - k;
-                        let p = getRandomInt(5001, 9998);
-                        if (p % 10 === 0) p += 1;
-                        const n1 = p * k;
+                    let n4 = getRandomInt(501, 999);
+                    if (n4 % 10 === 0) n4 += 1;
+                    let n5 = getRandomInt(1001, 9998);
+                    if (n5 % 10 === 0) n5 += 2;
+                    const n3 = getRandomInt(4, 9);
+                    const k = getRandomInt(4, 9);
+                    const n2 = (n4 + n5) * n3 - k;
+                    let p = getRandomInt(5001, 9998);
+                    if (p % 10 === 0) p += 1;
+                    const n1 = p * k;
 
-                        // Решаем уравнение: (n1 / x + n2) / n3 - n4 = n5
-                        // x = n1 / (((n5 + n4) * n3) - n2)
-                        const term1 = (n5 + n4) * n3 - n2;
-                        if (term1 === 0 || n1 % term1 !== 0) continue;
-                        const answer = n1 / term1;
-                        if (!Number.isInteger(answer) || answer <= 0) continue;
-
-                        const problemStr = `(${n1} : x + ${n2}) : ${n3} - ${n4} = ${n5}`;
-                        return { problem: problemStr, answer };
-                    }
+                    const term1 = (n5 + n4) * n3 - n2;
+                    const answer = n1 / term1;
+                    const problemStr = `(${n1} : x + ${n2}) : ${n3} - ${n4} = ${n5}`;
+                    return { problem: problemStr, answer };
                 }
             },
             {
                 id: "УС3",
                 generator: () => {
-                    while (true) {
-                        let k = getRandomInt(1001, 9998);
-                        if (k % 10 === 0) k += 123;
-                        const n3 = getRandomInt(3, 9);
-                        let p = getRandomInt(501, 998);
-                        if (p % 10 === 0) p -= 123;
-                        const n5 = getRandomInt(4, 9);
-                        const n1 = n5 * p;
-                        let n4 = getRandomInt(1001, 6998);
-                        if (n4 % 10 === 0) n4 += 78;
-                        let m = getRandomInt(501, 998);
-                        if (m % 10 === 0) m -= 7;
-                        const n2 = m * n3 + (n1 / n5 + n4);
-                        
-                        // Решаем уравнение: n1 / (n2 - n3 * x - n4) = n5
-                        // x = (n2 - n4 - n1 / n5) / n3
-                        const term1 = n1 / n5;
-                        const term2 = n2 - n4 - term1;
-                        if (term2 % n3 !== 0) continue;
-                        const answer = term2 / n3;
-                        if (!Number.isInteger(answer)) continue;
-
-                        const problemStr = `${n1} : (${n2} - ${n3} * x - ${n4}) = ${n5}`;
-                        return { problem: problemStr, answer };
-                    }
+                    const n3 = getRandomInt(3, 9);
+                    let p = getRandomInt(501, 998);
+                    if (p % 10 === 0) p -= 123;
+                    const n5 = getRandomInt(4, 9);
+                    const n1 = n5 * p;
+                    let n4 = getRandomInt(1001, 6998);
+                    if (n4 % 10 === 0) n4 += 78;
+                    let m = getRandomInt(501, 998);
+                    if (m % 10 === 0) m -= 7;
+                    const n2 = m * n3 + (n1 / n5 + n4);
+                    
+                    const answer = (n2 - n4 - (n1 / n5)) / n3;
+                    const problemStr = `${n1} : (${n2} - ${n3} * x - ${n4}) = ${n5}`;
+                    return { problem: problemStr, answer };
                 }
             },
             {
                 id: "УС4",
                 generator: () => {
-                    while (true) {
-                        let n3 = getRandomInt(301, 499);
-                        if (n3 % 10 === 0) n3 += 123;
-                        let n2 = getRandomInt(1001, 1999);
-                        if (n2 % 10 === 0) n2 -= 68;
-                        const n1 = getRandomInt(n2 + n3 + 1001, 3499);
-                        const n4 = getRandomInt(n1 - n2 - n3 + 4, n1 - n2 - n3 + 9);
-                        let n5 = getRandomInt(501, 999);
-                        if (n5 % 100 === 0) n5 += 103;
+                    let n3 = getRandomInt(301, 499);
+                    if (n3 % 10 === 0) n3 += 123;
+                    let n2 = getRandomInt(1001, 1999);
+                    if (n2 % 10 === 0) n2 -= 68;
+                    const n1 = getRandomInt(n2 + n3 + 1001, 3499);
+                    const n4 = getRandomInt(n1 - n2 - n3 + 4, n1 - n2 - n3 + 9);
+                    let n5 = getRandomInt(501, 999);
+                    if (n5 % 100 === 0) n5 += 103;
 
-                        // Решаем: n1 - n2 - (n4 - x / n5) = n3
-                        // x = (n4 - (n1 - n2 - n3)) * n5
-                        const term1 = n1 - n2 - n3;
-                        const answer = (n4 - term1) * n5;
-                        if (!Number.isInteger(answer)) continue;
-
-                        const problemStr = `${n1} - ${n2} - (${n4} - x : ${n5}) = ${n3}`;
-                        return { problem: problemStr, answer };
-                    }
+                    const answer = (n4 - (n1 - n2 - n3)) * n5;
+                    const problemStr = `${n1} - ${n2} - (${n4} - x : ${n5}) = ${n3}`;
+                    return { problem: problemStr, answer };
                 }
             },
             {
                 id: "УС5",
                 generator: () => {
-                    while (true) {
-                        let k = getRandomInt(501, 999);
-                        if (k % 10 === 0) k += 49;
-                        const n3 = getRandomInt(4, 9);
-                        let n1 = getRandomInt(101, 999);
-                        if (n1 % 10 === 0) n1 -= 17;
-                        let n5 = getRandomInt(101, 499);
-                        if (n5 % 10 === 0) n5 += 78;
-                        const n4 = getRandomInt(3, 9);
-                        const n2 = (n1 - n5) * n4 - k;
+                    let k = getRandomInt(501, 999);
+                    if (k % 10 === 0) k += 49;
+                    const n3 = getRandomInt(4, 9);
+                    let n1 = getRandomInt(101, 999);
+                    if (n1 % 10 === 0) n1 -= 17;
+                    let n5 = getRandomInt(101, 499);
+                    if (n5 % 10 === 0) n5 += 78;
+                    const n4 = getRandomInt(3, 9);
+                    const n2 = (n1 - n5) * n4 - k;
 
-                        // Решаем: n1 - (n2 + x * n3) / n4 = n5
-                        // x = (((n1 - n5) * n4) - n2) / n3
-                        const term1 = (n1 - n5) * n4;
-                        const term2 = term1 - n2;
-                        if (term2 % n3 !== 0) continue;
-                        const answer = term2 / n3;
-                        if (!Number.isInteger(answer)) continue;
-
-                        const problemStr = `${n1} - (${n2} + x * ${n3}) : ${n4} = ${n5}`;
-                        return { problem: problemStr, answer };
-                    }
+                    const answer = (((n1 - n5) * n4) - n2) / n3;
+                    const problemStr = `${n1} - (${n2} + x * ${n3}) : ${n4} = ${n5}`;
+                    return { problem: problemStr, answer };
                 }
             },
             {
                 id: "УС6",
                 generator: () => {
-                    while (true) {
-                        let n1 = getRandomInt(101, 998);
-                        if (n1 % 10 === 0) n1 -= 3;
-                        const n2 = getRandomInt(4, 9);
-                        let p = getRandomInt(Math.ceil(101 / n2), Math.floor(998 / n2));
-                        if (p % 10 === 0) p -= 82;
-                        const n5 = n1 + n2 * p;
-                        const p_val = (n5 - n1) / n2; // Это p
-                        const n3 = getRandomInt(p_val + 3, p_val + 9);
-                        const t = n3 - p_val; // Это должно быть однозначным (2 < t < 10), что выполняется
-                        if (t <= 1) continue;
-                        let k = getRandomInt(101, 998);
-                        if (k % 10 === 0) k += 26;
-                        const n4 = k * t;
+                    let n1 = getRandomInt(101, 998);
+                    if (n1 % 10 === 0) n1 -= 3;
+                    const n2 = getRandomInt(4, 9);
+                    let p = getRandomInt(Math.ceil(101 / n2), Math.floor(998 / n2));
+                    if (p % 10 === 0) p -= 82;
+                    const n5 = n1 + n2 * p;
+                    const p_val = (n5 - n1) / n2;
+                    const n3 = getRandomInt(p_val + 3, p_val + 9);
+                    const t = n3 - p_val;
+                    let k = getRandomInt(101, 998);
+                    if (k % 10 === 0) k += 26;
+                    const n4 = k * t;
 
-                        // Решаем: n1 + n2 * (n3 - n4 / x) = n5
-                        // x = n4 / (n3 - (n5 - n1) / n2)
-                        const term1 = n5 - n1;
-                        if (term1 % n2 !== 0) continue;
-                        const term2 = term1 / n2;
-                        const denominator = n3 - term2;
-                        if (denominator === 0 || n4 % denominator !== 0) continue;
-                        const answer = n4 / denominator;
-                        if (!Number.isInteger(answer)) continue;
-
-                        const problemStr = `${n1} + ${n2} * (${n3} - ${n4} : x) = ${n5}`;
-                        return { problem: problemStr, answer };
-                    }
+                    const answer = n4 / (n3 - (n5 - n1) / n2);
+                    const problemStr = `${n1} + ${n2} * (${n3} - ${n4} : x) = ${n5}`;
+                    return { problem: problemStr, answer };
                 }
             },
             {
                 id: "УС7",
                 generator: () => {
-                    while (true) {
-                        const n5 = getRandomInt(4, 9);
-                        let n1 = getRandomInt(4, 9);
-                        if (n1 === 5) n1 = 4;
-                        const k = getRandomInt(Math.ceil(501 / n1), Math.floor(699 / n1));
-                        const n2 = n1 * k;
-                        const base_n3 = (n5 * n2) / n1;
-                        let n3 = getRandomInt(base_n3 + 501, base_n3 + 999);
-                        if (n3 % 10 === 0) n3 += 37;
-                        const n4 = getRandomInt(4, 9);
+                    const n5 = getRandomInt(4, 9);
+                    let n1 = getRandomInt(4, 9);
+                    if (n1 === 5) n1 = 4;
+                    const k = getRandomInt(Math.ceil(501 / n1), Math.floor(699 / n1));
+                    const n2 = n1 * k;
+                    const base_n3 = (n5 * n2) / n1;
+                    let n3 = getRandomInt(base_n3 + 501, base_n3 + 999);
+                    if (n3 % 10 === 0) n3 += 37;
+                    const n4 = getRandomInt(4, 9);
 
-                        // Решаем: n1 * (n3 - x / n4) / n2 = n5
-                        // x = (n3 - (n5 * n2) / n1) * n4
-                        const term1 = (n5 * n2);
-                        if (term1 % n1 !== 0) continue;
-                        const term2 = term1 / n1;
-                        const answer = (n3 - term2) * n4;
-                        if (!Number.isInteger(answer)) continue;
-
-                        const problemStr = `${n1} * (${n3} - x : ${n4}) : ${n2} = ${n5}`;
-                        return { problem: problemStr, answer };
-                    }
+                    const answer = (n3 - (n5 * n2) / n1) * n4;
+                    const problemStr = `${n1} * (${n3} - x : ${n4}) : ${n2} = ${n5}`;
+                    return { problem: problemStr, answer };
                 }
             },
             {
                 id: "УС8",
                 generator: () => {
-                    while (true) {
-                        const n4 = getRandomInt(4, 9);
-                        let k = getRandomInt(501, 998);
-                        if (k % 10 === 0) k -= 21;
-                        const n5 = n4 * k;
-                        const n2 = getRandomInt(4, 9);
-                        const p = getRandomInt(Math.ceil(501 / n2), Math.floor(999 / n2));
-                        const n1 = k - n2 * p;
-                        const n3 = getRandomInt(4, 9);
-
-                        // Решаем: (n1 + x * n2 / n3) * n4 = n5
-                        // x = ((n5 / n4 - n1) * n3) / n2
-                        const term1 = n5 / n4;
-                        const term2 = (term1 - n1) * n3;
-                        if (term2 % n2 !== 0) continue;
-                        const answer = term2 / n2;
-                        if (!Number.isInteger(answer)) continue;
-                        
-                        const problemStr = `(${n1} + x * ${n2} : ${n3}) * ${n4} = ${n5}`;
-                        return { problem: problemStr, answer };
-                    }
+                    const n4 = getRandomInt(4, 9);
+                    let k = getRandomInt(501, 998);
+                    if (k % 10 === 0) k -= 21;
+                    const n5 = n4 * k;
+                    const n2 = getRandomInt(4, 9);
+                    const p = getRandomInt(Math.ceil(501 / n2), Math.floor(999 / n2));
+                    const n1 = k - n2 * p;
+                    const n3 = getRandomInt(4, 9);
+                    
+                    const answer = ((n5 / n4 - n1) * n3) / n2;
+                    const problemStr = `(${n1} + x * ${n2} : ${n3}) * ${n4} = ${n5}`;
+                    return { problem: problemStr, answer };
                 }
             },
             {
                 id: "УС9",
                 generator: () => {
-                    while (true) {
-                        let m = getRandomInt(501, 998);
-                        if (m % 10 === 0) m -= 17;
-                        const p = getRandomInt(4, 9);
-                        const n2 = m * p;
-                        const n3 = getRandomInt(4, 9);
-                        const h = p * n3;
-                        const k = getRandomInt(4, 9);
-                        const n4 = getRandomInt(4, 9);
-                        const n5 = n4 * k;
-                        const n1 = h * k;
+                    let m = getRandomInt(501, 998);
+                    if (m % 10 === 0) m -= 17;
+                    const p = getRandomInt(4, 9);
+                    const n2 = m * p;
+                    const n3 = getRandomInt(4, 9);
+                    const h = p * n3;
+                    const k = getRandomInt(4, 9);
+                    const n4 = getRandomInt(4, 9);
+                    const n5 = n4 * k;
+                    const n1 = h * k;
 
-                        // Решаем: n1 / ((n2 / (x * n3)) * n4) = n5
-                        // x = (n2 * n4 * n5) / (n1 * n3)
-                        const numerator = n2 * n4 * n5;
-                        const denominator = n1 * n3;
-                        if (denominator === 0 || numerator % denominator !== 0) continue;
-                        const answer = numerator / denominator;
-                        if (!Number.isInteger(answer)) continue;
-
-                        const problemStr = `${n1} : (${n2} : x * ${n3}) * ${n4} = ${n5}`;
-                        return { problem: problemStr, answer };
-                    }
+                    const answer = (n2 * n4 * n5) / (n1 * n3);
+                    const problemStr = `${n1} : (${n2} : x * ${n3}) * ${n4} = ${n5}`;
+                    return { problem: problemStr, answer };
                 }
             },
             {
                 id: "УС10",
                 generator: () => {
-                    while (true) {
-                        let h = getRandomInt(51, 98);
-                        if (h % 10 === 0) h += 1;
-                        const t = getRandomInt(4, 9);
-                        const n3 = t * h;
-                        let p = getRandomInt(201, 599);
-                        if (p % 10 === 0) p += 17;
-                        const n2 = p + t;
-                        const n4 = getRandomInt(4, 9);
-                        
-                        let k = n4 * p;
-                        // Проверяем, что k - четырехзначное
-                        if (k < 1000 || k > 9999) continue;
+                    let h = getRandomInt(51, 98);
+                    if (h % 10 === 0) h += 1;
+                    const t = getRandomInt(4, 9);
+                    const n3 = t * h;
+                    let p = getRandomInt(201, 599);
+                    if (p % 10 === 0) p += 17;
+                    const n2 = p + t;
+                    const n4 = getRandomInt(4, 9);
+                    let k = n4 * p;
+                    if (k % 10 === 0) k += 123;
+                    const n1 = getRandomInt(1001, 9999);
+                    const n5 = n1 + k;
 
-                        if (k % 10 === 0) k += 123;
-                        const n1 = getRandomInt(1001, 9999);
-                        const n5 = n1 + k;
-
-                        // Решаем: n1 + (n2 - n3 * x) * n4 = n5
-                        // x = (n2 - (n5 - n1) / n4) / n3
-                        const term1 = n5 - n1;
-                        if (term1 % n4 !== 0) continue;
-                        const term2 = term1 / n4;
-                        const term3 = n2 - term2;
-                        if (term3 % n3 !== 0) continue;
-                        const answer = term3 / n3;
-                        if (!Number.isInteger(answer)) continue;
-
-                        const problemStr = `${n1} + (${n2} - ${n3} * x) * ${n4} = ${n5}`;
-                        return { problem: problemStr, answer };
-                    }
+                    const answer = (n2 - (n5 - n1) / n4) / n3;
+                    const problemStr = `${n1} + (${n2} - ${n3} * x) * ${n4} = ${n5}`;
+                    return { problem: problemStr, answer };
                 }
             }
         ];
 
-        // --- Логика тренажёра (остается без изменений) ---
+        // --- Логика тренажёра ---
         const problemsContainer = document.getElementById('problems-container');
         const checkBtn = document.getElementById('checkBtn');
         const timerEl = document.getElementById('timer');
@@ -508,11 +404,10 @@
             generatedProblems.forEach((p, index) => {
                 const problemEl = document.createElement('div');
                 problemEl.className = 'problem';
-                // Заменяем 'x' на ' x ' для лучшей читаемости, но не если это часть слова (нерелевантно здесь)
                 const displayProblem = p.problem.replace(/x/g, ' x ');
                 problemEl.innerHTML = `
                     <span class="problem-text">${index + 1}. ${displayProblem}</span>
-                    <input type="number" class="answer-input">
+                    <input type="text" inputmode="decimal" class="answer-input">
                 `;
                 problemsContainer.appendChild(problemEl);
             });
@@ -538,17 +433,20 @@
         }
 
         function checkAnswers() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-            }
+            if (timerInterval) clearInterval(timerInterval);
             checkBtn.disabled = true;
             const inputs = document.querySelectorAll('.answer-input');
             let correctCount = 0;
             inputs.forEach((input, index) => {
-                const userAnswer = parseInt(input.value, 10);
+                // Заменяем запятую на точку для правильного парсинга
+                const userValue = input.value.replace(',', '.');
+                const userAnswer = parseFloat(userValue);
                 const correctAnswer = generatedProblems[index].answer;
+                
                 generatedProblems[index].userAnswer = isNaN(userAnswer) ? 'нет ответа' : userAnswer;
-                if (userAnswer === correctAnswer) {
+                
+                // Сравниваем, округляя до 2 знаков после запятой, чтобы избежать ошибок с плавающей точкой
+                if (!isNaN(userAnswer) && Math.round(userAnswer * 100) === Math.round(correctAnswer * 100)) {
                     progressSquares[index].classList.add('correct');
                     correctCount++;
                 } else {
@@ -561,6 +459,17 @@
             printBtn.classList.remove('hidden');
         }
         
+        // Функция для красивого форматирования чисел (целые и до 2 знаков после запятой)
+        const formatNumber = (num) => {
+            if (isNaN(num)) return num;
+            // Если число целое, возвращаем как есть
+            if (Number.isInteger(num)) {
+                return num.toString();
+            }
+            // Округляем до 2 знаков и заменяем точку на запятую
+            return (Math.round(num * 100) / 100).toString().replace('.', ',');
+        };
+
         function printResults() {
             let printContent = `
                 <style>
@@ -573,13 +482,13 @@
                 <h1>Результаты тренажёра "Решение уравнений"</h1>
             `;
             generatedProblems.forEach((p, index) => {
-                const isCorrect = p.userAnswer === p.answer;
+                const isCorrect = !isNaN(p.userAnswer) && Math.round(p.userAnswer * 100) === Math.round(p.answer * 100);
                 const displayProblem = p.problem.replace(/x/g, ' x ');
                 printContent += `
                     <div class="problem-item">
                         <p><b>Задание ${index + 1}:</b> ${displayProblem}</p>
-                        <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${p.userAnswer}</span></p>
-                        ${!isCorrect ? `<p><b>Правильный ответ:</b> ${p.answer}</p>` : ''}
+                        <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${formatNumber(p.userAnswer)}</span></p>
+                        ${!isCorrect ? `<p><b>Правильный ответ:</b> ${formatNumber(p.answer)}</p>` : ''}
                     </div>
                 `;
             });
