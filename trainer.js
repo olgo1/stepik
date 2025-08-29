@@ -29,23 +29,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Основные функции ---
     function init() {
-        // --- Установка заголовков из конфига ---
-        document.getElementById('trainer-title').textContent = trainerConfig.title || 'Тренажёр';
-        document.getElementById('trainer-subtitle').textContent = trainerConfig.subtitle || 'Выполните задания';
-        document.title = trainerConfig.title || 'Тренажёр'; // Также меняем заголовок вкладки браузера
+        // --- Установка заголовков из настроек ---
+        document.getElementById('trainer-title').textContent = trainerSettings.title || 'Тренажёр';
+        const minutes = Math.floor(trainerSettings.totalTime / 60);
+        document.getElementById('trainer-subtitle').textContent = `Заданий: ${trainerSettings.problemsToSelect} | Время: ${minutes} мин.`;
+        document.title = trainerSettings.title || 'Тренажёр';
 
-        // Создаем квадраты прогресса на основе настроек
+        // --- НОВАЯ ЛОГИКА ВЫБОРА ЗАДАЧ ---
+        // 1. Группируем все задачи по типу
+        const tasksByType = allTasks.reduce((acc, task) => {
+            if (!acc[task.type]) {
+                acc[task.type] = [];
+            }
+            acc[task.type].push(task);
+            return acc;
+        }, {});
+
+        // 2. Получаем список уникальных типов и перемешиваем его
+        const uniqueTypes = Object.keys(tasksByType);
+        shuffleArray(uniqueTypes);
+
+        // 3. Выбираем нужное количество типов (но не больше, чем есть)
+        const typesToSelect = Math.min(trainerSettings.problemsToSelect, uniqueTypes.length);
+        const selectedTypes = uniqueTypes.slice(0, typesToSelect);
+
+        // 4. Из каждого выбранного типа берём одну случайную задачу
+        generatedProblems = selectedTypes.map(type => {
+            const tasksInType = tasksByType[type];
+            const randomIndex = Math.floor(Math.random() * tasksInType.length);
+            const chosenTask = tasksInType[randomIndex];
+
+            // Формируем объект задачи для тренажёра
+            return {
+                problem: chosenTask.problemText,
+                answer: chosenTask.calculateAnswer()
+            };
+        });
+        
+        // --- Отображение UI ---
         progressBar.innerHTML = '';
-        for (let i = 0; i < trainerConfig.problemsToSelect; i++) {
+        for (let i = 0; i < generatedProblems.length; i++) {
             const square = document.createElement('div');
             square.className = 'progress-square';
             progressBar.appendChild(square);
         }
         progressSquares = document.querySelectorAll('.progress-square');
-
-        shuffleArray(problemTypes);
-        const selectedTypes = problemTypes.slice(0, trainerConfig.problemsToSelect);
-        generatedProblems = selectedTypes.map(type => type.generator());
         
         problemsContainer.innerHTML = '';
         generatedProblems.forEach((p, index) => {
@@ -58,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             problemsContainer.appendChild(problemEl);
         });
-        startTimer(trainerConfig.totalTime);
+        startTimer(trainerSettings.totalTime);
     }
 
     function startTimer(duration) {
@@ -79,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             timerEl.textContent = `${minutes}:${seconds}`;
         };
 
-        updateTimer(); // Вызываем сразу для отображения начального времени
+        updateTimer();
         timerInterval = setInterval(updateTimer, 1000);
     }
 
@@ -103,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             input.disabled = true;
         });
-        scoreTextEl.textContent = `Вы решили правильно ${correctCount} из ${trainerConfig.problemsToSelect} примеров.`;
+        scoreTextEl.textContent = `Вы решили правильно ${correctCount} из ${generatedProblems.length} примеров.`;
         resultsEl.classList.remove('hidden');
         printBtn.classList.remove('hidden');
     }
@@ -117,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .correct { color: green; font-weight: bold; }
                 .incorrect { color: red; font-weight: bold; }
             </style>
-            <h1>${trainerConfig.title || 'Результаты'}</h1>
+            <h1>${trainerSettings.title || 'Результаты'}</h1>
         `;
         generatedProblems.forEach((p, index) => {
             const isCorrect = !isNaN(p.userAnswer) && Math.round(p.userAnswer * 100) === Math.round(p.answer * 100);
