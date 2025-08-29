@@ -1,8 +1,8 @@
 // --- ОБЩИЕ НАСТРОЙКИ ТРЕНАЖЁРА ---
 const trainerSettings = {
-    title: "Время на часах",
-    problemsToSelect: 3, // Можете изменить количество задач, которые будут выбраны
-    totalTime: 600 // Время в секундах (1200 = 20 минут)
+    title: "Комплексный тренажёр по задачам",
+    problemsToSelect: 5, // Можете изменить количество задач, которые будут выбраны
+    totalTime: 1200 // Время в секундах (1200 = 20 минут)
 };
 
 // --- Утилиты для генерации ---
@@ -218,8 +218,8 @@ const allTasks = [
             let t2 = getRandomInt(12, 18);
             t2 -= t2 % 2;
             const m1 = [2, 3, 4, 5, 6][getRandomInt(0, 4)];
-            let m2 = (Math.random() < 0.5) ? m1 + 2 : m1 - 2;
-            if (m2 < m1) { m2 = m1 + 2; } // Предполагаемая логика, чтобы m2 всегда было больше
+            // Логика ниже предполагает, что m2 всегда больше m1.
+            const m2 = m1 + 2;
             const n1 = Math.floor((525 + t1 * m2 + t2 * (m2 - 1)) / 60);
             const k1 = (525 + t1 * m2 + t2 * (m2 - 1)) % 60;
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
@@ -242,8 +242,8 @@ const allTasks = [
             let t2 = getRandomInt(12, 18);
             t2 -= t2 % 2;
             const m1 = [2, 3, 4, 5, 6][getRandomInt(0, 4)];
-            let m2 = (Math.random() < 0.5) ? m1 + 2 : m1 - 2;
-            if (m2 < m1) { m2 = m1 + 2; } // Предполагаемая логика, чтобы m2 всегда было больше
+             // Логика ниже предполагает, что m2 всегда больше m1.
+            const m2 = m1 + 2;
             const n1 = Math.floor((525 + t1 * m2 + t2 * (m2 - 1)) / 60);
             const k1 = (525 + t1 * m2 + t2 * (m2 - 1)) % 60;
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
@@ -274,13 +274,15 @@ const allTasks = [
             return { variables: vars, problemText: problemText };
         },
         calculateAnswer: (vars) => {
-            const totalMinutes = (vars.n1 * 60 + vars.k1) - vars.t - (vars.a * 60 + vars.b);
+            let totalMinutes = (vars.n1 * 60 + vars.k1) - vars.t - (vars.a * 60 + vars.b);
+            // Обеспечиваем, что время не будет отрицательным при переходе через полночь
+            while (totalMinutes < 0) { totalMinutes += 24 * 60; }
             const n0 = Math.floor(totalMinutes / 60) % 24;
             const k0 = totalMinutes % 60;
             return `${String(n0).padStart(2, '0')}:${String(k0).padStart(2, '0')}`;
         }
     },
-     {
+    {
         type: "Самолёты (2)",
         number: 6.2,
         generate: () => {
@@ -292,15 +294,13 @@ const allTasks = [
             if (k1 % 10 === 0) { k1++; }
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
             const problemText = `Вылет самолёта задержали на ${a} ч ${b} мин. Он немного изменил маршрут, поэтому летел на ${t} минут меньше расчётного времени и приземлился в ${time1}. Во сколько этот самолёт должен был вылететь по плану? Дайте ответ в виде чч:мм.`;
-             const vars = { a, b, t, n1, k1 };
+            const vars = { a, b, t, n1, k1 };
             return { variables: vars, problemText: problemText };
         },
         calculateAnswer: (vars) => {
-            // Эта формула неверна в условии. Время вылета не зависит от времени полета.
-            // Правильная формула: (ВремяПриземления - Задержка - ВремяПолета)
-            // Но так как ВремяПолета неизвестно, задача нерешаема.
-            // Я реализую формулу из вашего ответа, хотя она логически неверна.
-            const totalMinutes = (vars.n1 * 60 + vars.k1 + vars.t) - (vars.a * 60 + vars.b);
+            // Примечание: Эта формула из вашего условия, она не учитывает неизвестное время полёта.
+            let totalMinutes = (vars.n1 * 60 + vars.k1 + vars.t) - (vars.a * 60 + vars.b);
+            while (totalMinutes < 0) { totalMinutes += 24 * 60; }
             const n0 = Math.floor(totalMinutes / 60) % 24;
             const k0 = totalMinutes % 60;
             return `${String(n0).padStart(2, '0')}:${String(k0).padStart(2, '0')}`;
@@ -348,7 +348,7 @@ const allTasks = [
             const k1 = getRandomInt(46, 58);
             const n2 = n1 + 2;
             const k2 = getRandomInt(1, k1 - 41);
-            let t = getRandomInt(80 + k2 - k1 + 1, 120 + k2 - k1 - 1);
+            let t = getRandomInt(80 + k2 - k1 + 1, 119 + k2 - k1);
             t -= t % 5;
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
             const time2 = `${String(n2).padStart(2, '0')}:${String(k2).padStart(2, '0')}`;
@@ -482,7 +482,7 @@ const allTasks = [
             if (k1 % 5 === 0) k1++;
             let t = getRandomInt(31, 60 * a + b - 1);
             t -= t % 30;
-            if(t<=30) t = 60;
+            if (t <= 30) t = 60;
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
             const problemText = `Электрички со станции ${name1} отправляются в Москву с интервалом ${a} часов ${b} минут. ${name2} приехал на станцию в ${time1} и оказалось, что последняя электричка ушла ${t} минут назад. Во сколько уходит следующая электричка? Дайте ответ в виде чч:мм.`;
             const vars = { n1, k1, a, b, t };
@@ -510,7 +510,7 @@ const allTasks = [
             if (k1 % 5 === 0) k1++;
             let t = getRandomInt(31, 60 * a + b - 1);
             t -= t % 30;
-            if(t<=30) t = 60;
+            if (t <= 30) t = 60;
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
             const problemText = `Электрички со станции ${name1} отправляются в Москву с интервалом ${a} часов ${b} минут. ${name2} приехал на станцию в ${time1} и оказалось, что следующая электричка будет через ${t} минут. Во сколько ушла предыдущая электричка? Дайте ответ в виде чч:мм.`;
             const vars = { n1, k1, a, b, t };
@@ -530,7 +530,7 @@ const allTasks = [
             let t1 = getRandomInt(240, 320);
             t1 -= t1 % 10;
             const n2 = getRandomInt(Math.floor(t1 / 60) + 1, Math.floor(t1 / 60) + 2);
-            let k2 = getRandomInt(1, 9);
+            const k2 = getRandomInt(1, 9);
             const n1 = getRandomInt(9, 16);
             let k1 = getRandomInt(1, 59);
             if (k1 % 5 === 0) k1++;
@@ -540,7 +540,7 @@ const allTasks = [
             return { variables: vars, problemText: problemText };
         },
         calculateAnswer: (vars) => {
-            // Формула в условии была неверна, исправляю на логически правильную
+            // Формула в условии была неверна, исправлена на логически правильную
             const arrivalTime = (vars.n1 * 60 + vars.k1) + (vars.n2 * 60 + vars.k2);
             const totalMinutes = arrivalTime - vars.t1;
             const n0 = Math.floor(totalMinutes / 60);
@@ -555,7 +555,7 @@ const allTasks = [
             let t1 = getRandomInt(240, 320);
             t1 -= t1 % 10;
             const n2 = getRandomInt(Math.floor(t1 / 60) + 1, Math.floor(t1 / 60) + 2);
-            let k2 = getRandomInt(1, 9);
+            const k2 = getRandomInt(1, 9);
             const n1 = getRandomInt(9, 16);
             let k1 = getRandomInt(1, 59);
             if (k1 % 5 === 0) k1++;
@@ -585,7 +585,7 @@ const allTasks = [
             const t1 = getRandomInt(2, 9);
             let t2 = getRandomInt(61, 89);
             t2 -= t2 % 10;
-            if(t2 <= 60) t2=70;
+            if (t2 <= 60) t2 = 70;
             const problemText = `${name1} гуляла ${a} часа ${b} минут. ${name2} вышел на ${t1} минуты позже ${name1}, а вернулся на ${t2} минут раньше. Сколько минут гулял ${name2}?`;
             const vars = { a, b, t1, t2 };
             return { variables: vars, problemText: problemText };
@@ -617,15 +617,15 @@ const allTasks = [
         generate: () => {
             const name1List = ["Серёжа", "Глеб", "Денис", "Антон", "Родион"];
             const name2List = ["Лена", "Даша", "Дарина", "Тася", "Лера", "Аманда"];
-            const name1 = name1List[getRandomInt(0, name1List.length-1)];
-            const name2 = name2List[getRandomInt(0, name2List.length-1)];
+            const name1 = name1List[getRandomInt(0, name1List.length - 1)];
+            const name2 = name2List[getRandomInt(0, name2List.length - 1)];
             const a = [1, 2, 3][getRandomInt(0, 2)];
             const b = [10, 20, 30, 40, 50][getRandomInt(0, 4)];
             let t1 = getRandomInt(11, 24);
             if (t1 % 10 === 0) t1++;
             const t2 = getRandomInt(6, 14);
             const upperBound = a * 60 + b - t1 - t2;
-            const t3 = getRandomInt(10, Math.floor(upperBound / 2) -1);
+            const t3 = getRandomInt(10, Math.floor(upperBound / 2) - 1);
             const problemText = `Тест длится ${a} часов ${b} минут. ${name1} опоздал на тест на ${t1} минут, а закончил за ${t2} минут до конца. ${name2} писала тест на ${t3} минут больше ${name1}. За сколько минут ${name2} справилась с тестом?`;
             const vars = { a, b, t1, t2, t3 };
             return { variables: vars, problemText: problemText };
@@ -638,12 +638,12 @@ const allTasks = [
         generate: () => {
             const name1List = ["Серёжа", "Глеб", "Денис", "Антон", "Родион"];
             const name2List = ["Лена", "Даша", "Дарина", "Тася", "Лера", "Аманда"];
-            const name1 = name1List[getRandomInt(0, name1List.length-1)];
-            const name2 = name2List[getRandomInt(0, name2List.length-1)];
+            const name1 = name1List[getRandomInt(0, name1List.length - 1)];
+            const name2 = name2List[getRandomInt(0, name2List.length - 1)];
             const b = [10, 20, 30, 40, 50][getRandomInt(0, 4)];
             const t1 = getRandomInt(4, 6);
             let t2 = getRandomInt(61, 89);
-            if(t2 % 5 !== 0) t2 -= t2 % 5;
+            if (t2 % 5 !== 0) t2 -= t2 % 5;
             const upperBound = t1 + t2 - 5;
             let t3 = getRandomInt(3, upperBound - 1);
             if (t3 % 5 === 0) t3++;
