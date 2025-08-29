@@ -75,7 +75,13 @@ h1 + p {
     align-items: center;
     margin-bottom: 20px;
     font-size: 18px;
-    font-family: 'Courier New', Courier, monospace;
+    
+    /* Было так: */
+    /* font-family: 'Courier New', Courier, monospace; */
+    
+    /* Станет так: */
+    font-family: 'PT Serif', serif;
+    
     font-weight: 600;
 }
 .problem-text {
