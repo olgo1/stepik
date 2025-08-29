@@ -29,6 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Основные функции ---
     function init() {
+        // --- Установка заголовков из конфига ---
+        document.getElementById('trainer-title').textContent = trainerConfig.title || 'Тренажёр';
+        document.getElementById('trainer-subtitle').textContent = trainerConfig.subtitle || 'Выполните задания';
+        document.title = trainerConfig.title || 'Тренажёр'; // Также меняем заголовок вкладки браузера
+
         // Создаем квадраты прогресса на основе настроек
         progressBar.innerHTML = '';
         for (let i = 0; i < trainerConfig.problemsToSelect; i++) {
@@ -112,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .correct { color: green; font-weight: bold; }
                 .incorrect { color: red; font-weight: bold; }
             </style>
-            <h1>Результаты тренажёра "Решение уравнений"</h1>
+            <h1>${trainerConfig.title || 'Результаты'}</h1>
         `;
         generatedProblems.forEach((p, index) => {
             const isCorrect = !isNaN(p.userAnswer) && Math.round(p.userAnswer * 100) === Math.round(p.answer * 100);
