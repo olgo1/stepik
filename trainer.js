@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatNumber = (num) => {
         if (isNaN(num)) return num;
         if (Number.isInteger(num)) return num.toString();
+        // Округляем до 2 знаков после запятой для дробных ответов
         return (Math.round(num * 100) / 100).toString().replace('.', ',');
     };
 
@@ -44,18 +45,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const uniqueTypes = Object.keys(tasksByType);
         shuffleArray(uniqueTypes);
-
         const typesToSelect = Math.min(trainerSettings.problemsToSelect, uniqueTypes.length);
         const selectedTypes = uniqueTypes.slice(0, typesToSelect);
 
-        // Для каждого выбранного типа берём один случайный ШАБЛОН и вызываем его ГЕНЕРАТОР
+        // --- Генерация задач ---
         generatedProblems = selectedTypes.map(type => {
             const tasksInType = tasksByType[type];
             const randomIndex = Math.floor(Math.random() * tasksInType.length);
-            const chosenTaskTemplate = tasksInType[randomIndex];
+            const taskTemplate = tasksInType[randomIndex];
 
-            // Вызываем генератор, чтобы создать уникальный вариант задачи
-            return chosenTaskTemplate.generator(); // ←-- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ!
+            // 1. Генерируем переменные и текст задачи
+            const generated = taskTemplate.generate();
+            
+            // 2. Вычисляем ответ по вашей формуле, передавая сгенерированные переменные
+            const answer = taskTemplate.calculateAnswer(generated.variables);
+
+            // 3. Собираем финальный объект задачи для тренажёра
+            return {
+                problem: generated.problemText,
+                answer: answer
+            };
         });
         
         // --- Отображение UI ---
@@ -81,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
         startTimer(trainerSettings.totalTime);
     }
 
-    // --- Остальные функции (startTimer, checkAnswers, printResults) остаются БЕЗ ИЗМЕНЕНИЙ ---
     function startTimer(duration) {
         if(timerInterval) clearInterval(timerInterval);
         const endTime = Date.now() + duration * 1000;
@@ -114,9 +122,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const userAnswer = parseFloat(userValue);
             const correctAnswer = generatedProblems[index].answer;
             
-            generatedProblems[index].userAnswer = isNaN(userAnswer) ? 'нет ответа' : userAnswer;
+            generatedProblems[index].userAnswer = isNaN(userAnswer) ? '' : userAnswer;
             
-            if (!isNaN(userAnswer) && Math.round(userAnswer * 100) === Math.round(correctAnswer * 100)) {
+            // Проверяем ответы: для строк (чч:мм) и для чисел
+            let isCorrect = false;
+            if (typeof correctAnswer === 'string') {
+                isCorrect = userAnswer === correctAnswer || input.value.trim() === correctAnswer;
+            } else if (!isNaN(userAnswer)) {
+                isCorrect = Math.round(userAnswer * 100) === Math.round(correctAnswer * 100);
+            }
+
+            if (isCorrect) {
                 progressSquares[index].classList.add('correct');
                 correctCount++;
             } else {
@@ -141,12 +157,17 @@ document.addEventListener('DOMContentLoaded', () => {
             <h1>${trainerSettings.title || 'Результаты'}</h1>
         `;
         generatedProblems.forEach((p, index) => {
-            const isCorrect = !isNaN(p.userAnswer) && Math.round(p.userAnswer * 100) === Math.round(p.answer * 100);
+            let isCorrect = false;
+             if (typeof p.answer === 'string') {
+                isCorrect = p.userAnswer === p.answer;
+            } else if (!isNaN(p.userAnswer)) {
+                isCorrect = Math.round(p.userAnswer * 100) === Math.round(p.answer * 100);
+            }
             const displayProblem = p.problem.replace(/x/g, ' x ');
             printContent += `
                 <div class="problem-item">
                     <p><b>Задание ${index + 1}:</b> ${displayProblem}</p>
-                    <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${formatNumber(p.userAnswer)}</span></p>
+                    <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${p.userAnswer === '' ? 'нет ответа' : formatNumber(p.userAnswer)}</span></p>
                     ${!isCorrect ? `<p><b>Правильный ответ:</b> ${formatNumber(p.answer)}</p>` : ''}
                 </div>
             `;
