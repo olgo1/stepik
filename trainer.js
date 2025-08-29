@@ -1,0 +1,140 @@
+// --- Логика тренажёра ---
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Получение элементов со страницы ---
+    const problemsContainer = document.getElementById('problems-container');
+    const checkBtn = document.getElementById('checkBtn');
+    const timerEl = document.getElementById('timer');
+    const progressBar = document.querySelector('.progress-bar');
+    const resultsEl = document.getElementById('results');
+    const scoreTextEl = document.getElementById('score-text');
+    const printBtn = document.getElementById('printBtn');
+
+    let generatedProblems = [];
+    let timerInterval;
+    let progressSquares = [];
+
+    // --- Утилиты ---
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+    
+    const formatNumber = (num) => {
+        if (isNaN(num)) return num;
+        if (Number.isInteger(num)) return num.toString();
+        return (Math.round(num * 100) / 100).toString().replace('.', ',');
+    };
+
+    // --- Основные функции ---
+    function init() {
+        // Создаем квадраты прогресса на основе настроек
+        progressBar.innerHTML = '';
+        for (let i = 0; i < trainerConfig.problemsToSelect; i++) {
+            const square = document.createElement('div');
+            square.className = 'progress-square';
+            progressBar.appendChild(square);
+        }
+        progressSquares = document.querySelectorAll('.progress-square');
+
+        shuffleArray(problemTypes);
+        const selectedTypes = problemTypes.slice(0, trainerConfig.problemsToSelect);
+        generatedProblems = selectedTypes.map(type => type.generator());
+        
+        problemsContainer.innerHTML = '';
+        generatedProblems.forEach((p, index) => {
+            const problemEl = document.createElement('div');
+            problemEl.className = 'problem';
+            const displayProblem = p.problem.replace(/x/g, ' x ');
+            problemEl.innerHTML = `
+                <span class="problem-text">${index + 1}. ${displayProblem}</span>
+                <input type="text" inputmode="decimal" class="answer-input">
+            `;
+            problemsContainer.appendChild(problemEl);
+        });
+        startTimer(trainerConfig.totalTime);
+    }
+
+    function startTimer(duration) {
+        if(timerInterval) clearInterval(timerInterval);
+        const endTime = Date.now() + duration * 1000;
+        
+        const updateTimer = () => {
+            const timeLeft = Math.round((endTime - Date.now()) / 1000);
+            if (timeLeft < 0) {
+                clearInterval(timerInterval);
+                timerEl.textContent = "Время вышло!";
+                checkAnswers();
+                return;
+            }
+            const minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            timerEl.textContent = `${minutes}:${seconds}`;
+        };
+
+        updateTimer(); // Вызываем сразу для отображения начального времени
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function checkAnswers() {
+        if (timerInterval) clearInterval(timerInterval);
+        checkBtn.disabled = true;
+        const inputs = document.querySelectorAll('.answer-input');
+        let correctCount = 0;
+        inputs.forEach((input, index) => {
+            const userValue = input.value.replace(',', '.');
+            const userAnswer = parseFloat(userValue);
+            const correctAnswer = generatedProblems[index].answer;
+            
+            generatedProblems[index].userAnswer = isNaN(userAnswer) ? 'нет ответа' : userAnswer;
+            
+            if (!isNaN(userAnswer) && Math.round(userAnswer * 100) === Math.round(correctAnswer * 100)) {
+                progressSquares[index].classList.add('correct');
+                correctCount++;
+            } else {
+                progressSquares[index].classList.add('incorrect');
+            }
+            input.disabled = true;
+        });
+        scoreTextEl.textContent = `Вы решили правильно ${correctCount} из ${trainerConfig.problemsToSelect} примеров.`;
+        resultsEl.classList.remove('hidden');
+        printBtn.classList.remove('hidden');
+    }
+    
+    function printResults() {
+        let printContent = `
+            <style>
+                body { font-family: Arial, sans-serif; }
+                h1 { text-align: center; }
+                .problem-item { margin-bottom: 20px; font-size: 16px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+                .correct { color: green; font-weight: bold; }
+                .incorrect { color: red; font-weight: bold; }
+            </style>
+            <h1>Результаты тренажёра "Решение уравнений"</h1>
+        `;
+        generatedProblems.forEach((p, index) => {
+            const isCorrect = !isNaN(p.userAnswer) && Math.round(p.userAnswer * 100) === Math.round(p.answer * 100);
+            const displayProblem = p.problem.replace(/x/g, ' x ');
+            printContent += `
+                <div class="problem-item">
+                    <p><b>Задание ${index + 1}:</b> ${displayProblem}</p>
+                    <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${formatNumber(p.userAnswer)}</span></p>
+                    ${!isCorrect ? `<p><b>Правильный ответ:</b> ${formatNumber(p.answer)}</p>` : ''}
+                </div>
+            `;
+        });
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // --- Назначение событий ---
+    checkBtn.addEventListener('click', checkAnswers);
+    printBtn.addEventListener('click', printResults);
+    
+    // --- Запуск тренажёра ---
+    init();
+});
