@@ -1,8 +1,8 @@
 // --- ОБЩИЕ НАСТРОЙКИ ТРЕНАЖЁРА ---
 const trainerSettings = {
-    title: "Время на часах",
-    problemsToSelect: 3,
-    totalTime: 900
+    title: "Комплексный тренажёр по задачам",
+    problemsToSelect: 5, // Можете изменить количество задач, которые будут выбраны
+    totalTime: 1200 // Время в секундах (1200 = 20 минут)
 };
 
 // --- Утилиты для генерации ---
@@ -11,7 +11,7 @@ const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) +
 // --- БАЗА ШАБЛОНОВ ЗАДАЧ ---
 const allTasks = [
     {
-        type: "Время в пути (пробки)",
+        type: "Время в пути",
         number: 1.1,
         generate: () => {
             const n1 = getRandomInt(17, 20);
@@ -30,7 +30,7 @@ const allTasks = [
         calculateAnswer: (vars) => (vars.n2 * 60 + vars.k2 + vars.t) - (vars.n1 * 60 + vars.k1)
     },
     {
-        type: "Время в пути (опережение)",
+        type: "Время в пути",
         number: 1.2,
         generate: () => {
             const n1 = getRandomInt(17, 20);
@@ -50,7 +50,7 @@ const allTasks = [
         calculateAnswer: (vars) => (vars.n2 * 60 + vars.k2 - vars.t) - (vars.n1 * 60 + vars.k1)
     },
     {
-        type: "Логика: Время прогулки (1)",
+        type: "Логика: Время прогулки",
         number: 2.1,
         generate: () => {
             const N1 = ["Маша", "Лена", "Наташа", "Оля", "Яна"];
@@ -74,7 +74,7 @@ const allTasks = [
         calculateAnswer: (vars) => (vars.n2 * 60 + vars.k2) - (vars.n1 * 60 + vars.k1 + vars.t1) + vars.t2
     },
     {
-        type: "Логика: Время прогулки (2)",
+        type: "Логика: Время прогулки",
         number: 2.2,
         generate: () => {
             const N1 = ["Ратмир", "Егор", "Миша", "Ильдар", "Денис"];
@@ -103,7 +103,7 @@ const allTasks = [
         }
     },
     {
-        type: "Поезда (1)",
+        type: "Поезда",
         number: 3.1,
         generate: () => {
             const n1 = getRandomInt(9, 20);
@@ -131,7 +131,7 @@ const allTasks = [
         }
     },
     {
-        type: "Поезда (2)",
+        type: "Поезда",
         number: 3.2,
         generate: () => {
             const n1 = getRandomInt(5, 15);
@@ -159,7 +159,7 @@ const allTasks = [
         }
     },
     {
-        type: "Лекции (1)",
+        type: "Лекции",
         number: 4.1,
         generate: () => {
             const n1 = getRandomInt(8, 15);
@@ -182,7 +182,7 @@ const allTasks = [
         }
     },
     {
-        type: "Лекции (2)",
+        type: "Лекции",
         number: 4.2,
         generate: () => {
             const n1 = getRandomInt(8, 15);
@@ -207,7 +207,7 @@ const allTasks = [
         }
     },
     {
-        type: "Школа (1)",
+        type: "Школа",
         number: 5.1,
         generate: () => {
             const name1List = ["Даша", "Василиса", "Рита", "Света"];
@@ -218,7 +218,7 @@ const allTasks = [
             let t2 = getRandomInt(12, 18);
             t2 -= t2 % 2;
             const m1 = [2, 3, 4, 5, 6][getRandomInt(0, 4)];
-            const m2 = m1 + 2; // Упрощенная логика для предсказуемости
+            const m2 = m1 + 2; 
             const n1 = Math.floor((525 + t1 * m2 + t2 * (m2 - 1)) / 60);
             const k1 = (525 + t1 * m2 + t2 * (m2 - 1)) % 60;
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
@@ -234,14 +234,14 @@ const allTasks = [
         }
     },
     {
-        type: "Школа (2)",
+        type: "Школа",
         number: 5.2,
         generate: () => {
             const t1 = [40, 45][getRandomInt(0, 1)];
             let t2 = getRandomInt(12, 18);
             t2 -= t2 % 2;
             const m1 = [2, 3, 4, 5, 6][getRandomInt(0, 4)];
-            const m2 = m1 + 2; // Упрощенная логика для предсказуемости
+            const m2 = m1 + 2;
             const n1 = Math.floor((525 + t1 * m2 + t2 * (m2 - 1)) / 60);
             const k1 = (525 + t1 * m2 + t2 * (m2 - 1)) % 60;
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
@@ -257,7 +257,7 @@ const allTasks = [
         }
     },
     {
-        type: "Самолёты (1)",
+        type: "Самолёты",
         number: 6.1,
         generate: () => {
             const a = [1, 2, 3][getRandomInt(0, 2)];
@@ -280,7 +280,7 @@ const allTasks = [
         }
     },
     {
-        type: "Самолёты (2)",
+        type: "Самолёты",
         number: 6.2,
         generate: () => {
             const a = [1, 2, 3][getRandomInt(0, 2)];
@@ -295,7 +295,6 @@ const allTasks = [
             return { variables: vars, problemText: problemText };
         },
         calculateAnswer: (vars) => {
-            // Примечание: Эта формула из вашего условия, она не учитывает неизвестное время полёта.
             let totalMinutes = (vars.n1 * 60 + vars.k1 + vars.t) - (vars.a * 60 + vars.b);
             while (totalMinutes < 0) { totalMinutes += 24 * 60; }
             const n0 = Math.floor(totalMinutes / 60) % 24;
@@ -304,7 +303,7 @@ const allTasks = [
         }
     },
     {
-        type: "Встречи (1)",
+        type: "Встречи",
         number: 7.1,
         generate: () => {
             const names = ["Марина", "Злата", "Элина", "Аня", "Оксана", "Мия"];
@@ -330,7 +329,7 @@ const allTasks = [
         calculateAnswer: (vars) => (vars.n1 * 60 + vars.k1) - (vars.n2 * 60 + vars.k2 - vars.t)
     },
     {
-        type: "Встречи (2)",
+        type: "Встречи",
         number: 7.2,
         generate: () => {
             const names = ["Марина", "Злата", "Элина", "Аня", "Оксана", "Мия"];
@@ -356,7 +355,7 @@ const allTasks = [
         calculateAnswer: (vars) => (vars.n2 * 60 + vars.k2 - vars.t) - (vars.n1 * 60 + vars.k1)
     },
     {
-        type: "Опоздания (1)",
+        type: "Опоздания",
         number: 9.1,
         generate: () => {
             const names = ["Михаил Юрьевич", "Сергей Петрович", "Дмитрий Олегович", "Юрий Владимирович"];
@@ -380,7 +379,7 @@ const allTasks = [
         }
     },
     {
-        type: "Опоздания (2)",
+        type: "Опоздания",
         number: 9.2,
         generate: () => {
             const names = ["Михаил Юрьевич", "Сергей Петрович", "Дмитрий Олегович", "Юрий Владимирович"];
@@ -405,7 +404,7 @@ const allTasks = [
         }
     },
     {
-        type: "Поезда (3)",
+        type: "Поезда",
         number: 10.1,
         generate: () => {
             let n1 = getRandomInt(9, 16);
@@ -435,7 +434,7 @@ const allTasks = [
         }
     },
     {
-        type: "Поезда (4)",
+        type: "Поезда",
         number: 10.2,
         generate: () => {
             let n1 = getRandomInt(9, 16);
@@ -465,7 +464,7 @@ const allTasks = [
         }
     },
     {
-        type: "Электрички (1)",
+        type: "Электрички",
         number: 11.1,
         generate: () => {
             const name1List = ["Ромашково", "Хлюпино", "Быково", "Дачная"];
@@ -493,7 +492,7 @@ const allTasks = [
         }
     },
     {
-        type: "Электрички (2)",
+        type: "Электрички",
         number: 11.2,
         generate: () => {
             const name1List = ["Ромашково", "Хлюпино", "Быково", "Дачная"];
@@ -521,7 +520,7 @@ const allTasks = [
         }
     },
     {
-        type: "Автомобиль и автобус (1)",
+        type: "Транспорт",
         number: 12.1,
         generate: () => {
             let t1 = getRandomInt(240, 320);
@@ -545,7 +544,7 @@ const allTasks = [
         }
     },
     {
-        type: "Автомобиль и автобус (2)",
+        type: "Транспорт",
         number: 12.2,
         generate: () => {
             let t1 = getRandomInt(240, 320);
@@ -568,7 +567,7 @@ const allTasks = [
         }
     },
     {
-        type: "Время прогулки (3)",
+        type: "Прогулки",
         number: 13.1,
         generate: () => {
             const name1List = ["Лена", "Даша", "Дарина", "Тася", "Лера", "Аманда"];
@@ -589,7 +588,7 @@ const allTasks = [
         calculateAnswer: (vars) => vars.a * 60 + vars.b - vars.t1 - vars.t2
     },
     {
-        type: "Время прогулки (4)",
+        type: "Прогулки",
         number: 13.2,
         generate: () => {
             const name1List = ["Лена", "Даша", "Дарина", "Тася", "Лера", "Аманда"];
@@ -608,7 +607,7 @@ const allTasks = [
         calculateAnswer: (vars) => vars.a * 60 + vars.b - vars.t1 + vars.t2
     },
     {
-        type: "Тесты (1)",
+        type: "Тесты",
         number: 14.1,
         generate: () => {
             const name1List = ["Серёжа", "Глеб", "Денис", "Антон", "Родион"];
@@ -629,7 +628,7 @@ const allTasks = [
         calculateAnswer: (vars) => vars.a * 60 + vars.b - vars.t1 - vars.t2 + vars.t3
     },
     {
-        type: "Тесты (2)",
+        type: "Тесты",
         number: 14.2,
         generate: () => {
             const name1List = ["Серёжа", "Глеб", "Денис", "Антон", "Родион"];
@@ -639,7 +638,7 @@ const allTasks = [
             const b = [10, 20, 30, 40, 50][getRandomInt(0, 4)];
             const t1 = getRandomInt(4, 6);
             let t2 = getRandomInt(61, 89);
-            if (t2 % 5 !== 0) t2 -= t2 % 5;
+            t2 -= t2 % 5;
             const upperBound = t1 + t2 - 5;
             let t3 = getRandomInt(3, upperBound - 1);
             if (t3 % 5 === 0) t3++;
