@@ -1,6 +1,11 @@
 /* --- Общие стили для страницы --- */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    /* Было так: */
+    /* font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; */
+
+    /* Станет так: */
+    font-family: 'PT Serif', serif;
+
     background-color: #f0f2f5;
     display: flex;
     justify-content: center;
