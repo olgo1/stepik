@@ -22,9 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const formatNumber = (num) => {
-        if (isNaN(num)) return num;
+        if (typeof num !== 'number' || isNaN(num)) return num;
         if (Number.isInteger(num)) return num.toString();
-        // Округляем до 2 знаков после запятой для дробных ответов
         return (Math.round(num * 100) / 100).toString().replace('.', ',');
     };
 
@@ -53,14 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const tasksInType = tasksByType[type];
             const randomIndex = Math.floor(Math.random() * tasksInType.length);
             const taskTemplate = tasksInType[randomIndex];
-
-            // 1. Генерируем переменные и текст задачи
             const generated = taskTemplate.generate();
-            
-            // 2. Вычисляем ответ по вашей формуле, передавая сгенерированные переменные
             const answer = taskTemplate.calculateAnswer(generated.variables);
-
-            // 3. Собираем финальный объект задачи для тренажёра
             return {
                 problem: generated.problemText,
                 answer: answer
@@ -118,16 +111,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const inputs = document.querySelectorAll('.answer-input');
         let correctCount = 0;
         inputs.forEach((input, index) => {
-            const userValue = input.value.replace(',', '.');
-            const userAnswer = parseFloat(userValue);
+            // ↓↓↓ ИЗМЕНЕНИЕ ЗДЕСЬ: убираем все пробелы из ответа ↓↓↓
+            const userValue = input.value.replace(',', '.').replace(/\s/g, '');
+            // ↑↑↑ ИЗМЕНЕНИЕ ЗДЕСЬ ↑↑↑
+            
+            let userAnswer;
+            if (userValue.includes(':')) {
+                userAnswer = userValue; // Если ответ - время (чч:мм), оставляем как строку
+            } else {
+                userAnswer = parseFloat(userValue); // Иначе преобразуем в число
+            }
+
             const correctAnswer = generatedProblems[index].answer;
+            generatedProblems[index].userAnswer = userValue === '' ? 'нет ответа' : userAnswer;
             
-            generatedProblems[index].userAnswer = isNaN(userAnswer) ? '' : userAnswer;
-            
-            // Проверяем ответы: для строк (чч:мм) и для чисел
             let isCorrect = false;
             if (typeof correctAnswer === 'string') {
-                isCorrect = userAnswer === correctAnswer || input.value.trim() === correctAnswer;
+                isCorrect = userAnswer === correctAnswer;
             } else if (!isNaN(userAnswer)) {
                 isCorrect = Math.round(userAnswer * 100) === Math.round(correctAnswer * 100);
             }
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h1>${trainerSettings.title || 'Результаты'}</h1>
         `;
         generatedProblems.forEach((p, index) => {
-            let isCorrect = false;
+             let isCorrect = false;
              if (typeof p.answer === 'string') {
                 isCorrect = p.userAnswer === p.answer;
             } else if (!isNaN(p.userAnswer)) {
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             printContent += `
                 <div class="problem-item">
                     <p><b>Задание ${index + 1}:</b> ${displayProblem}</p>
-                    <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${p.userAnswer === '' ? 'нет ответа' : formatNumber(p.userAnswer)}</span></p>
+                    <p><b>Ваш ответ:</b> <span class="${isCorrect ? 'correct' : 'incorrect'}">${p.userAnswer === 'нет ответа' ? p.userAnswer : formatNumber(p.userAnswer)}</span></p>
                     ${!isCorrect ? `<p><b>Правильный ответ:</b> ${formatNumber(p.answer)}</p>` : ''}
                 </div>
             `;
