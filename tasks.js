@@ -1,8 +1,8 @@
 // --- ОБЩИЕ НАСТРОЙКИ ТРЕНАЖЁРА ---
 const trainerSettings = {
     title: "Комплексный тренажёр по задачам",
-    problemsToSelect: 5, // Можете изменить количество задач, которые будут выбраны
-    totalTime: 1200 // Время в секундах (1200 = 20 минут)
+    problemsToSelect: 5,
+    totalTime: 1200
 };
 
 // --- Утилиты для генерации ---
@@ -53,10 +53,19 @@ const allTasks = [
         type: "Логика: Время прогулки",
         number: 2.1,
         generate: () => {
-            const N1 = ["Маша", "Лена", "Наташа", "Оля", "Яна"];
-            const N2 = ["Денис", "Демид", "Андрей", "Витя", "Саша"];
-            const name1 = N1[getRandomInt(0, N1.length - 1)];
-            const name2 = N2[getRandomInt(0, N2.length - 1)];
+            // ↓↓↓ ИЗМЕНЕНИЕ ЗДЕСЬ: имена с падежами ↓↓↓
+            const N1_names = [
+                { nom: "Маша", gen: "Маши" }, { nom: "Лена", gen: "Лены" }, 
+                { nom: "Наташа", gen: "Наташи" }, { nom: "Оля", gen: "Оли" }, { nom: "Яна", gen: "Яны" }
+            ];
+            const N2_names = [
+                { nom: "Денис", gen: "Дениса" }, { nom: "Демид", gen: "Демида" }, 
+                { nom: "Андрей", gen: "Андрея" }, { nom: "Витя", gen: "Вити" }, { nom: "Саша", gen: "Саши" }
+            ];
+            const name1 = N1_names[getRandomInt(0, N1_names.length - 1)];
+            const name2 = N2_names[getRandomInt(0, N2_names.length - 1)];
+            // ↑↑↑ ИЗМЕНЕНИЕ ЗДЕСЬ ↑↑↑
+            
             const n1 = getRandomInt(14, 17);
             let k1 = getRandomInt(10, 39);
             if (k1 % 5 === 0) { k1 += 1; }
@@ -67,7 +76,11 @@ const allTasks = [
             const t2 = getRandomInt(4, 14);
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
             const time2 = `${String(n2).padStart(2, '0')}:${String(k2).padStart(2, '0')}`;
-            const problemText = `${name1} вышла гулять в ${time1}, а ${name2} на ${t1} минут позже. ${name2} вернулся домой в ${time2}, и он гулял на ${t2} минут меньше ${name1}. Сколько минут гуляла ${name1}?`;
+            
+            // ↓↓↓ ИЗМЕНЕНИЕ ЗДЕСЬ: используем правильный падеж ↓↓↓
+            const problemText = `${name1.nom} вышла гулять в ${time1}, а ${name2.nom} на ${t1} минут позже. ${name2.nom} вернулся домой в ${time2}, и он гулял на ${t2} минут меньше ${name1.gen}. Сколько минут гуляла ${name1.nom}?`;
+            // ↑↑↑ ИЗМЕНЕНИЕ ЗДЕСЬ ↑↑↑
+            
             const vars = { n1, k1, n2, k2, t1, t2 };
             return { variables: vars, problemText: problemText };
         },
@@ -77,10 +90,19 @@ const allTasks = [
         type: "Логика: Время прогулки",
         number: 2.2,
         generate: () => {
-            const N1 = ["Ратмир", "Егор", "Миша", "Ильдар", "Денис"];
-            const N2 = ["Настя", "Аня", "Катя", "Алина", "Сабина"];
-            const name1 = N1[getRandomInt(0, N1.length - 1)];
-            const name2 = N2[getRandomInt(0, N2.length - 1)];
+            // ↓↓↓ ИЗМЕНЕНИЕ ЗДЕСЬ: имена с падежами ↓↓↓
+            const N1_names = [
+                { nom: "Ратмир", gen: "Ратмира" }, { nom: "Егор", gen: "Егора" }, 
+                { nom: "Миша", gen: "Миши" }, { nom: "Ильдар", gen: "Ильдара" }, { nom: "Денис", gen: "Дениса" }
+            ];
+            const N2_names = [
+                { nom: "Настя", gen: "Насти" }, { nom: "Аня", gen: "Ани" }, 
+                { nom: "Катя", gen: "Кати" }, { nom: "Алина", gen: "Алины" }, { nom: "Сабина", gen: "Сабины" }
+            ];
+            const name1 = N1_names[getRandomInt(0, N1_names.length - 1)];
+            const name2 = N2_names[getRandomInt(0, N2_names.length - 1)];
+            // ↑↑↑ ИЗМЕНЕНИЕ ЗДЕСЬ ↑↑↑
+
             const n1 = getRandomInt(14, 17);
             let k1 = getRandomInt(10, 39);
             if (k1 % 5 === 0) { k1 += 1; }
@@ -91,7 +113,11 @@ const allTasks = [
             const t2 = getRandomInt(4, 14);
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
             const time2 = `${String(n2).padStart(2, '0')}:${String(k2).padStart(2, '0')}`;
-            const problemText = `${name1} вышел гулять в ${time1}, а ${name2} на ${t1} минут позже. ${name2} вернулась домой в ${time2}, и она гуляла на ${t2} минут меньше ${name1}. Во сколько вернулся домой ${name1}? Дайте ответ в формате чч:мм.`;
+
+            // ↓↓↓ ИЗМЕНЕНИЕ ЗДЕСЬ: используем правильный падеж ↓↓↓
+            const problemText = `${name1.nom} вышел гулять в ${time1}, а ${name2.nom} на ${t1} минут позже. ${name2.nom} вернулась домой в ${time2}, и она гуляла на ${t2} минут меньше ${name1.gen}. Во сколько вернулся домой ${name1.nom}? Дайте ответ в формате чч:мм.`;
+            // ↑↑↑ ИЗМЕНЕНИЕ ЗДЕСЬ ↑↑↑
+
             const vars = { n1, k1, n2, k2, t1, t2 };
             return { variables: vars, problemText: problemText };
         },
@@ -102,6 +128,8 @@ const allTasks = [
             return `${String(n0).padStart(2, '0')}:${String(k0).padStart(2, '0')}`;
         }
     },
+    // ... и так далее для всех остальных задач ...
+    // Я скопирую сюда все остальные задачи из предыдущего ответа, чтобы файл был полным
     {
         type: "Поезда",
         number: 3.1,
@@ -218,7 +246,7 @@ const allTasks = [
             let t2 = getRandomInt(12, 18);
             t2 -= t2 % 2;
             const m1 = [2, 3, 4, 5, 6][getRandomInt(0, 4)];
-            const m2 = m1 + 2; 
+            const m2 = m1 + 2;
             const n1 = Math.floor((525 + t1 * m2 + t2 * (m2 - 1)) / 60);
             const k1 = (525 + t1 * m2 + t2 * (m2 - 1)) % 60;
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
@@ -640,7 +668,7 @@ const allTasks = [
             let t2 = getRandomInt(61, 89);
             t2 -= t2 % 5;
             const upperBound = t1 + t2 - 5;
-            let t3 = getRandomInt(3, upperBound - 1);
+            let t3 = getRandomInt(3, upperBound > 3 ? upperBound -1 : 3);
             if (t3 % 5 === 0) t3++;
             const problemText = `Тест длится 2 часа ${b} минут. ${name2} опоздала на него на ${t1} минут, а закончила за ${t2} минут до конца. ${name1} писал тест на ${t3} минут дольше ${name2}. За сколько минут ${name1} выполнил тест?`;
             const vars = { b, t1, t2, t3 };
