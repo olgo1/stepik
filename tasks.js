@@ -2,7 +2,7 @@
 const trainerSettings = {
     title: "Время на часах",
     problemsToSelect: 3,
-    totalTime: 600
+    totalTime: 900
 };
 
 // --- Утилиты для генерации ---
