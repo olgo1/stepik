@@ -1,8 +1,8 @@
 // --- ОБЩИЕ НАСТРОЙКИ ТРЕНАЖЁРА ---
 const trainerSettings = {
-    title: "Комплексный тренажёр по задачам",
-    problemsToSelect: 5,
-    totalTime: 1200
+    title: "Время на часах",
+    problemsToSelect: 3,
+    totalTime: 600
 };
 
 // --- Утилиты для генерации ---
