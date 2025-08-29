@@ -35,35 +35,27 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('trainer-subtitle').textContent = `Заданий: ${trainerSettings.problemsToSelect} | Время: ${minutes} мин.`;
         document.title = trainerSettings.title || 'Тренажёр';
 
-        // --- НОВАЯ ЛОГИКА ВЫБОРА ЗАДАЧ ---
-        // 1. Группируем все задачи по типу
+        // --- Логика выбора задач ---
         const tasksByType = allTasks.reduce((acc, task) => {
-            if (!acc[task.type]) {
-                acc[task.type] = [];
-            }
+            if (!acc[task.type]) { acc[task.type] = []; }
             acc[task.type].push(task);
             return acc;
         }, {});
 
-        // 2. Получаем список уникальных типов и перемешиваем его
         const uniqueTypes = Object.keys(tasksByType);
         shuffleArray(uniqueTypes);
 
-        // 3. Выбираем нужное количество типов (но не больше, чем есть)
         const typesToSelect = Math.min(trainerSettings.problemsToSelect, uniqueTypes.length);
         const selectedTypes = uniqueTypes.slice(0, typesToSelect);
 
-        // 4. Из каждого выбранного типа берём одну случайную задачу
+        // Для каждого выбранного типа берём один случайный ШАБЛОН и вызываем его ГЕНЕРАТОР
         generatedProblems = selectedTypes.map(type => {
             const tasksInType = tasksByType[type];
             const randomIndex = Math.floor(Math.random() * tasksInType.length);
-            const chosenTask = tasksInType[randomIndex];
+            const chosenTaskTemplate = tasksInType[randomIndex];
 
-            // Формируем объект задачи для тренажёра
-            return {
-                problem: chosenTask.problemText,
-                answer: chosenTask.calculateAnswer()
-            };
+            // Вызываем генератор, чтобы создать уникальный вариант задачи
+            return chosenTaskTemplate.generator(); // ←-- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ!
         });
         
         // --- Отображение UI ---
@@ -89,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
         startTimer(trainerSettings.totalTime);
     }
 
+    // --- Остальные функции (startTimer, checkAnswers, printResults) остаются БЕЗ ИЗМЕНЕНИЙ ---
     function startTimer(duration) {
         if(timerInterval) clearInterval(timerInterval);
         const endTime = Date.now() + duration * 1000;
