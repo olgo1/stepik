@@ -1,8 +1,8 @@
 // --- ОБЩИЕ НАСТРОЙКИ ТРЕНАЖЁРА ---
 const trainerSettings = {
     title: "Комплексный тренажёр по задачам",
-    problemsToSelect: 5, // Можете изменить количество задач, которые будут выбраны
-    totalTime: 1200 // Время в секундах (1200 = 20 минут)
+    problemsToSelect: 5,
+    totalTime: 1200
 };
 
 // --- Утилиты для генерации ---
@@ -218,8 +218,7 @@ const allTasks = [
             let t2 = getRandomInt(12, 18);
             t2 -= t2 % 2;
             const m1 = [2, 3, 4, 5, 6][getRandomInt(0, 4)];
-            // Логика ниже предполагает, что m2 всегда больше m1.
-            const m2 = m1 + 2;
+            const m2 = m1 + 2; // Упрощенная логика для предсказуемости
             const n1 = Math.floor((525 + t1 * m2 + t2 * (m2 - 1)) / 60);
             const k1 = (525 + t1 * m2 + t2 * (m2 - 1)) % 60;
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
@@ -242,8 +241,7 @@ const allTasks = [
             let t2 = getRandomInt(12, 18);
             t2 -= t2 % 2;
             const m1 = [2, 3, 4, 5, 6][getRandomInt(0, 4)];
-             // Логика ниже предполагает, что m2 всегда больше m1.
-            const m2 = m1 + 2;
+            const m2 = m1 + 2; // Упрощенная логика для предсказуемости
             const n1 = Math.floor((525 + t1 * m2 + t2 * (m2 - 1)) / 60);
             const k1 = (525 + t1 * m2 + t2 * (m2 - 1)) % 60;
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
@@ -265,7 +263,7 @@ const allTasks = [
             const a = [1, 2, 3][getRandomInt(0, 2)];
             const b = [10, 20, 30, 40, 50][getRandomInt(0, 4)];
             const t = getRandomInt(1, 29);
-            const n1 = getRandomInt(1, 23);
+            const n1 = getRandomInt(3, 23);
             let k1 = getRandomInt(11, 59);
             if (k1 % 10 === 0) { k1++; }
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
@@ -275,7 +273,6 @@ const allTasks = [
         },
         calculateAnswer: (vars) => {
             let totalMinutes = (vars.n1 * 60 + vars.k1) - vars.t - (vars.a * 60 + vars.b);
-            // Обеспечиваем, что время не будет отрицательным при переходе через полночь
             while (totalMinutes < 0) { totalMinutes += 24 * 60; }
             const n0 = Math.floor(totalMinutes / 60) % 24;
             const k0 = totalMinutes % 60;
@@ -289,7 +286,7 @@ const allTasks = [
             const a = [1, 2, 3][getRandomInt(0, 2)];
             const b = [10, 20, 30, 40, 50][getRandomInt(0, 4)];
             const t = getRandomInt(1, 29);
-            const n1 = getRandomInt(1, 23);
+            const n1 = getRandomInt(3, 23);
             let k1 = getRandomInt(11, 59);
             if (k1 % 10 === 0) { k1++; }
             const time1 = `${String(n1).padStart(2, '0')}:${String(k1).padStart(2, '0')}`;
@@ -540,7 +537,6 @@ const allTasks = [
             return { variables: vars, problemText: problemText };
         },
         calculateAnswer: (vars) => {
-            // Формула в условии была неверна, исправлена на логически правильную
             const arrivalTime = (vars.n1 * 60 + vars.k1) + (vars.n2 * 60 + vars.k2);
             const totalMinutes = arrivalTime - vars.t1;
             const n0 = Math.floor(totalMinutes / 60);
