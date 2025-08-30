@@ -1,10 +1,31 @@
-// ====== НАСТРОЙКИ ПРОВЕРКИ ======
-const CHECK_SETTINGS = {
-  allowUnfactored: false,     // true — засчитывать и «не вынесен» (просто исходный полином)
-  requireAtLeastTwoTerms: true // внутри скобок должна быть сумма минимум из двух одночленов
+// ================= ФАЙЛ: 8_1.1.1.js =================
+//
+// ОПИСАНИЕ:
+// - Генерирует выражение из трёх одночленов: C_i * x^a * y^b,
+//   где C_i = k_nod * k_i, |C_i| < 100 и C_i не оканчивается на 0.
+// - Общий вынесенный множитель: k_nod * x^p_x_nod * y^p_y_nod.
+// - Внутри скобок три одночлена (k1,k2,k3) c ограничениями по взаимной простоте.
+// - Две корректные формы ответа:  G*(...)  и  -G*(-...).
+// - Парсер терпим к пробелам, порядку xy|yx, отсутствию ^1, знакам +/-, и т.п.
+
+// ---------- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ДЛЯ TRAINER ----------
+const trainerSettings = {
+  title: 'Разложение многочлена на множители',
+  totalTime: 600,           // 10 минут
+  problemsToSelect: 1       // пока один тип задачи
 };
 
-// ====== УТИЛИТЫ ДЛЯ ПАРСИНГА/НОРМАЛИЗАЦИИ ======
+// ---------- НАСТРОЙКИ ПРОВЕРКИ ----------
+const CHECK_SETTINGS = {
+  allowUnfactored: false,       // если true — можно засчитывать "не вынесен" как корректно (по умолчанию выключено)
+  requireAtLeastTwoTerms: true  // внутри скобок должна быть сумма минимум из двух одночленов
+};
+
+// ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
+function gcd(a, b) { return b === 0 ? Math.abs(a) : gcd(b, a % b); }
+const choice  = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const randint = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
 function _strip(s){ return (s||'').replace(/\s+/g,''); }
 function _takeVar(src, v){
   const re = new RegExp('^' + v + '(?:\\^(\\d+))?');
@@ -27,15 +48,12 @@ function _parseMonomial(str, xVar, yVar){
   let xa, yb, t = _takeVar(s, xVar);
   if (t){
     xa = t.exp; s = t.rest;
-    t = _takeVar(s, yVar);
-    if (!t) return null;
+    t = _takeVar(s, yVar); if(!t) return null;
     yb = t.exp; s = t.rest;
   } else {
-    t = _takeVar(s, yVar);
-    if (!t) return null;
+    t = _takeVar(s, yVar); if(!t) return null;
     yb = t.exp; s = t.rest;
-    t = _takeVar(s, xVar);
-    if (!t) return null;
+    t = _takeVar(s, xVar); if(!t) return null;
     xa = t.exp; s = t.rest;
   }
   if (s.length) return null;
@@ -45,6 +63,18 @@ function _parseMonomial(str, xVar, yVar){
 // разбор факторизованной формы: [±]K x^px y^py ( ±mono ±mono ... )
 function _parseFactorizedAnswer(raw, xVar, yVar){
   let s = _strip(raw);
+
+  // необязательные внешние скобки вокруг первого множителя: (G)(...)
+  if (s[0]==='(') {
+    let d=0, j=0;
+    for (; j<s.length; j++){
+      if (s[j]==='(') d++;
+      else if (s[j]===')'){ d--; if(d===0) break; }
+    }
+    if (d===0 && s[j+1]==='(') { // была форма (G)(...)
+      s = s.slice(1, j) + s.slice(j+1);
+    }
+  }
 
   // внешний знак
   let osign = 1;
@@ -65,14 +95,15 @@ function _parseFactorizedAnswer(raw, xVar, yVar){
     py = t.exp; s = t.rest;
   } else {
     t = _takeVar(s, yVar); if(!t) return null;
-    py = t.exp; s = t.rest;
+    py = t.exp; s = s.slice(t.rest.length ? s.length - t.rest.length : s.length); // корректно обновили
+    s = t.rest;
     t = _takeVar(s, xVar); if(!t) return null;
     px = t.exp; s = t.rest;
   }
 
-  // обязательные скобки
   if (s[0] !== '(') return null;
-  // находим закрывающую
+
+  // найдём закрывающую скобку
   let depth=0, i=0;
   for (; i<s.length; i++){
     if (s[i]==='(') depth++;
@@ -97,30 +128,26 @@ function _parseFactorizedAnswer(raw, xVar, yVar){
   return { outer: {coef: osign*K, x:px, y:py}, inner: terms };
 }
 
-// канонический вывод для сравнения с эталоном
+// канонизация факторизованной записи (для сравнения)
 function _canonFactorized(parsed, xVar, yVar){
   const { outer, inner } = parsed;
-
-  // сортировка слагаемых как в calculateAnswer (по суммарной степени, затем по степени x)
   const sorted = [...inner].sort((a,b)=>{
     const da = a.x + a.y, db = b.x + b.y;
     if (db !== da) return db - da;
     return b.x - a.x;
   });
-
   const fmtMono = (c, a, b) => `${c>0?'+':''}${c}${xVar}^${a}${yVar}^${b}`;
   let innerStr = fmtMono(sorted[0].coef, sorted[0].x, sorted[0].y).replace(/^\+/, '');
   for (let i=1;i<sorted.length;i++){
     const t = sorted[i];
     innerStr += fmtMono(t.coef, t.x, t.y);
   }
-
   const g = `${Math.abs(outer.coef)}${xVar}^${outer.x}${yVar}^${outer.y}`;
   const sign = outer.coef < 0 ? '-' : '';
   return `${sign}${g}(${innerStr})`;
 }
 
-// развёртка исходного полинома в канонической форме (если вдруг allowUnfactored=true)
+// развёртка исходного полинома (если allowUnfactored=true)
 function _canonExpanded(monos, xVar, yVar){
   const sorted = [...monos].sort((a,b)=>{
     const da = a.x_exp + a.y_exp, db = b.x_exp + b.y_exp;
@@ -135,32 +162,27 @@ function _canonExpanded(monos, xVar, yVar){
   return s;
 }
 
-// ====== ПУБЛИЧНЫЕ ФУНКЦИИ ДЛЯ TRAINER ======
+// Публичное API для trainer.js
 function normalizeUserAnswer(raw, vars){
   const { x, y } = vars;
   const parsed = _parseFactorizedAnswer(raw, x, y);
   if (!parsed) return { ok:false, reason:'format', normalized:null };
-
-  // нормализуем до канонической строки
   const norm = _canonFactorized(parsed, x, y).replace(/\s/g,'');
-  return { ok:true, reason:null, normalized:norm };
+  return { ok:true, normalized:norm };
 }
 
 function isAnswerCorrect(userRaw, task, vars){
   const answers = task.calculateAnswer(vars).map(s=>s.replace(/\s/g,''));
   const normRes = normalizeUserAnswer(userRaw, vars);
 
-  // если формат неверный — (опционально) проверим, хочет ли учитель разрешать «не вынесен»
   if (!normRes.ok){
     if (CHECK_SETTINGS.allowUnfactored){
-      // соберём исходные одночлены и сравним с канонической развёрткой
       const monomials = [
         { coeff: vars.k_nod*vars.k1, x_exp: vars.p_x_nod + vars.p_x_1, y_exp: vars.p_y_nod + vars.p_y_1 },
         { coeff: vars.k_nod*vars.k2, x_exp: vars.p_x_nod + vars.p_x_2, y_exp: vars.p_y_nod + vars.p_y_2 },
         { coeff: vars.k_nod*vars.k3, x_exp: vars.p_x_nod + vars.p_x_3, y_exp: vars.p_y_nod + vars.p_y_3 },
       ];
       const expandedCanon = _canonExpanded(monomials, vars.x, vars.y).replace(/\s/g,'');
-      // если ученик ввёл ровно исходный полином в таком же каноне — принять
       if (_strip(userRaw) === expandedCanon) {
         return { correct:true, variant:'unfactored' };
       }
@@ -173,8 +195,135 @@ function isAnswerCorrect(userRaw, task, vars){
   return { correct, expected: answers, normalized };
 }
 
-// Экспорт при необходимости
-if (typeof module !== 'undefined') {
-  module.exports.normalizeUserAnswer = normalizeUserAnswer;
-  module.exports.isAnswerCorrect = isAnswerCorrect;
-}
+// ---------- ОПИСАНИЕ ЗАДАНИЙ ----------
+const allTasks = [
+  {
+    type: 'polynomial_factorization',
+
+    // --- ГЕНЕРАЦИЯ ---
+    generate: function () {
+      while (true) {
+        try {
+          const x_vars = ['m','n','p','k'];
+          const x = choice(x_vars);
+          const y = choice(x_vars.filter(v=>v!==x));
+
+          // коэффициенты внутри скобок
+          const k1 = choice([3,4,6,7,8,9,-3,-4,-6,-7,-8,-9]);
+          const k2_candidates = [5,11,13,-5,-11,-13].filter(n=>gcd(Math.abs(k1),Math.abs(n))===1);
+          if (!k2_candidates.length) continue;
+          const k2 = choice(k2_candidates);
+
+          // k_nod = p1*p2 из {2,3,5,7}, без хвоста 0, и чтобы |k_nod*k1|,|k_nod*k2|<100
+          const p_set=[2,3,5,7];
+          const possible_nods=[];
+          for (const p1 of p_set){
+            for (const p2 of p_set){
+              if(p1===p2) continue;
+              const nod=p1*p2;
+              if(nod%10===0) continue;
+              if(Math.abs(nod*k1)<100 && Math.abs(nod*k2)<100) possible_nods.push(nod);
+            }
+          }
+          if(!possible_nods.length) continue;
+          const k_nod=choice(possible_nods);
+
+          // Степени (ваша логика)
+          const p_x_nod=randint(2,6);
+          const p_y_nod=choice([1,2,3,4,5,6].filter(n=>n!==p_x_nod));
+
+          const p_x_1=randint(2,6), p_y_1=randint(2,6);
+
+          const p_x_2_range=Array.from({length:Math.min(6,8-p_x_1)-1},(_,i)=>i+2);
+          const p_x_2_options=p_x_2_range.filter(n=>Math.abs(n-p_x_1)>=2);
+          if(!p_x_2_options.length) continue;
+          const p_x_2=choice(p_x_2_options);
+
+          const p_y_2_range=Array.from({length:Math.min(6,8-p_y_1)-1},(_,i)=>i+2);
+          const p_y_2_options=p_y_2_range.filter(n=>Math.abs(n-p_y_1)>=2);
+          if(!p_y_2_options.length) continue;
+          const p_y_2=choice(p_y_2_options);
+
+          const p_x_3_range=Array.from({length:Math.min(6,12-p_x_1-p_x_2)-1},(_,i)=>i+2);
+          const p_x_3_options=p_x_3_range.filter(n=>Math.abs(n-p_x_1)>=2&&Math.abs(n-p_x_2)>=1);
+          if(!p_x_3_options.length) continue;
+          const p_x_3=choice(p_x_3_options);
+
+          const p_y_3_range=Array.from({length:Math.min(6,12-p_y_1-p_y_2)-1},(_,i)=>i+2);
+          const p_y_3_options=p_y_3_range.filter(n=>Math.abs(n-p_y_1)>=2&&Math.abs(n-p_y_2)>=3);
+          if(!p_y_3_options.length) continue;
+          const p_y_3=choice(p_y_3_options);
+
+          // выбор k3: взаимно прост с k1,k2; |k_nod*k3|<100; не оканчивается на 0
+          let k3_range=[];
+          for(let n=-19;n<=19;n++){
+            if(Math.abs(n)<2) continue;
+            if(gcd(Math.abs(k1),Math.abs(n))!==1) continue;
+            if(gcd(Math.abs(k2),Math.abs(n))!==1) continue;
+            if(Math.abs(k_nod*n)>=100) continue;
+            if((k_nod*n)%10===0) continue;
+            k3_range.push(n);
+          }
+          let k3_options=(k1>0&&k2>0)?k3_range.filter(n=>n<0):k3_range;
+          if(!k3_options.length) continue;
+          const k3=choice(k3_options);
+
+          // финальная страховка
+          if(Math.abs(k_nod*k1)>=100||Math.abs(k_nod*k2)>=100||Math.abs(k_nod*k3)>=100) continue;
+
+          // сборка и HTML
+          const monomials=[
+            {coeff:k_nod*k1,x_exp:p_x_nod+p_x_1,y_exp:p_y_nod+p_y_1},
+            {coeff:k_nod*k2,x_exp:p_x_nod+p_x_2,y_exp:p_y_nod+p_y_2},
+            {coeff:k_nod*k3,x_exp:p_x_nod+p_x_3,y_exp:p_y_nod+p_y_3}
+          ];
+          monomials.forEach(m=>m.total_degree=m.x_exp+m.y_exp);
+          monomials.sort((a,b)=>(b.total_degree-a.total_degree)||(b.x_exp-a.x_exp));
+
+          const fmt=(c,xv,xe,yv,ye,first)=>{
+            let sign=first?'':(c<0?' - ':' + ');
+            if(first&&c<0) sign='-';
+            return `${sign}${Math.abs(c)}${xv}<sup>${xe}</sup>${yv}<sup>${ye}</sup>`;
+          };
+
+          const problemText=
+            fmt(monomials[0].coeff,x,monomials[0].x_exp,y,monomials[0].y_exp,true)+
+            fmt(monomials[1].coeff,x,monomials[1].x_exp,y,monomials[1].y_exp,false)+
+            fmt(monomials[2].coeff,x,monomials[2].x_exp,y,monomials[2].y_exp,false);
+
+          return { problemText, variables:{k_nod,k1,k2,k3,x,y,p_x_nod,p_y_nod,p_x_1,p_y_1,p_x_2,p_y_2,p_x_3,p_y_3}};
+        } catch(_){ continue; }
+      }
+    },
+
+    // --- ПРАВИЛЬНЫЕ ОТВЕТЫ (две формы) ---
+    calculateAnswer: function(vars){
+      const {k_nod,k1,k2,k3,x,y,p_x_nod,p_y_nod,p_x_1,p_y_1,p_x_2,p_y_2,p_x_3,p_y_3}=vars;
+      const gcf_string=`${k_nod}${x}^${p_x_nod}${y}^${p_y_nod}`;
+
+      let inner=[
+        {coeff:k1,x_exp:p_x_1,y_exp:p_y_1},
+        {coeff:k2,x_exp:p_x_2,y_exp:p_y_2},
+        {coeff:k3,x_exp:p_x_3,y_exp:p_y_3}
+      ];
+      inner.forEach(m=>m.total_degree=m.x_exp+m.y_exp);
+      inner.sort((a,b)=>(b.total_degree-a.total_degree)||(b.x_exp-a.x_exp));
+
+      const fmt=(c,xv,xe,yv,ye)=>`${c>0?'+':''}${c}${xv}^${xe}${yv}^${ye}`;
+      let inner_str=fmt(inner[0].coeff,x,inner[0].x_exp,y,inner[0].y_exp).replace(/^\+/, '');
+      inner_str+=fmt(inner[1].coeff,x,inner[1].x_exp,y,inner[1].y_exp);
+      inner_str+=fmt(inner[2].coeff,x,inner[2].x_exp,y,inner[2].y_exp);
+      const ans1=`${gcf_string}(${inner_str})`.replace(/\s/g,'');
+
+      let inner_neg=fmt(-inner[0].coeff,x,inner[0].x_exp,y,inner[0].y_exp).replace(/^\+/, '');
+      inner_neg+=fmt(-inner[1].coeff,x,inner[1].x_exp,y,inner[1].y_exp);
+      inner_neg+=fmt(-inner[2].coeff,x,inner[2].x_exp,y,inner[2].y_exp);
+      const ans2=`-${gcf_string}(${inner_neg})`.replace(/\s/g,'');
+
+      return [ans1,ans2];
+    }
+  }
+];
+
+// (опционально для тестов локально)
+// if (typeof module !== 'undefined') { module.exports = { trainerSettings, allTasks, normalizeUserAnswer, isAnswerCorrect }; }
