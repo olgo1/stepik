@@ -1,4 +1,4 @@
-// ================= ФАЙЛ: 8_1.1.1.js (ПОЛНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ) =================
+// ================= ФАЙЛ: 8_1.1.1.js (ПОЛНАЯ ФИНАЛЬНАЯ ВЕРСИЯ) =================
 
 // ---------- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ДЛЯ TRAINER ----------
 const trainerSettings = {
@@ -47,30 +47,27 @@ function _parseMonomial(str, xVar, yVar) {
   }
 
   let xa = 0, yb = 0;
-  // This loop allows variables in any order, e.g., "yx" or "xy"
   for (let step = 0; step < 2; step++) {
     let t = _takeVar(s, xVar);
-    if (t && xa === 0) { // check xa === 0 prevents parsing "xx"
+    if (t && xa === 0) {
       xa = t.exp;
       s = t.rest;
       continue;
     }
     t = _takeVar(s, yVar);
-    if (t && yb === 0) { // check yb === 0 prevents parsing "yy"
+    if (t && yb === 0) {
       yb = t.exp;
       s = t.rest;
       continue;
     }
     break;
   }
-  if (s.length !== 0) return null; // If anything is left after parsing, format is invalid
+  if (s.length !== 0) return null;
   return { coef: sign * coef, x: xa, y: yb };
 }
 
 function _parseFactorizedAnswer(raw, xVar, yVar) {
     let s = _strip(raw);
-
-    // Handle outer parenthesis for clarity e.g. (2x)(y+z)
     if (s.startsWith('(')) {
         let depth = 0, j = 0;
         for (; j < s.length; j++) {
@@ -80,13 +77,11 @@ function _parseFactorizedAnswer(raw, xVar, yVar) {
                 if (depth === 0) break;
             }
         }
-        // If the closing parenthesis is right before another opening one, it's likely two factors
         if (depth === 0 && j < s.length - 1 && s[j + 1] === '(') {
-            s = s.slice(1, j) + '*' + s.slice(j + 1); // use '*' as a separator
+            s = s.slice(1, j) + '*' + s.slice(j + 1);
         }
     }
     
-    // Allow an optional minus sign at the beginning
     let outerSign = 1;
     if (s.startsWith('-')) {
         outerSign = -1;
@@ -95,7 +90,6 @@ function _parseFactorizedAnswer(raw, xVar, yVar) {
         s = s.slice(1);
     }
     
-    // Split into outer and inner parts
     const parts = s.split('(');
     if (parts.length !== 2 || !parts[1].endsWith(')')) return null;
 
@@ -106,7 +100,6 @@ function _parseFactorizedAnswer(raw, xVar, yVar) {
     if (!outerParsed) return null;
     outerParsed.coef *= outerSign;
     
-    // Parse the inner polynomial
     const innerTermStrings = innerPartRaw.replace(/-/g, "+-").split('+').filter(Boolean);
     if (CHECK_SETTINGS.requireAtLeastTwoTerms && innerTermStrings.length < 2) return null;
     
@@ -124,8 +117,7 @@ function _parseFactorizedAnswer(raw, xVar, yVar) {
 function _canonFactorized(parsed, xVar, yVar) {
   const { outer, inner } = parsed;
   const sorted = [...inner].sort((a, b) => {
-    const da = a.x + a.y,
-      db = b.x + b.y;
+    const da = a.x + a.y, db = b.x + b.y;
     if (db !== da) return db - da;
     return b.x - a.x;
   });
@@ -136,14 +128,12 @@ function _canonFactorized(parsed, xVar, yVar) {
         str += c > 0 ? '+' : '';
     }
     
-    // Handle coefficient
     if (Math.abs(c) !== 1 || (xExp === 0 && yExp === 0)) {
       str += c;
     } else if (c === -1) {
       str += '-';
     }
     
-    // Handle variables
     if (xExp > 0) str += xVar + (xExp > 1 ? `^${xExp}` : '');
     if (yExp > 0) str += yVar + (yExp > 1 ? `^${yExp}` : '');
     return str;
@@ -195,7 +185,6 @@ const allTasks = [
         attempts++;
         if (attempts > 500) {
             console.error("Не удалось сгенерировать задание после 500 попыток. Проверьте условия.");
-            // Возвращаем "запасной" вариант, чтобы страница не зависла
             return {
                 problemText: "14m<sup>5</sup>n<sup>3</sup> + 35m<sup>4</sup>n<sup>4</sup> - 21m<sup>3</sup>n<sup>5</sup>",
                 variables: { k_nod: 7, k1: 2, k2: 5, k3: -3, x: 'm', y: 'n', p_x_nod: 3, p_y_nod: 3, p_x_1: 2, p_y_1: 0, p_x_2: 1, p_y_2: 1, p_x_3: 0, p_y_3: 2 }
@@ -234,39 +223,19 @@ const allTasks = [
           const p_x_1 = choice([1, 2, 3, 4]);
           const p_y_1 = choice([1, 2, 3, 4]);
 
-          const p_x_2_options = [1, 2, 3, 4].filter(
-            (n) =>
-              n + p_x_1 <= 7 &&
-              Math.abs(n - p_x_1) >= 1 &&
-              n !== p_x_1
-          );
+          const p_x_2_options = [1, 2, 3, 4].filter((n) => n + p_x_1 <= 7 && Math.abs(n - p_x_1) >= 1 && n !== p_x_1);
           if (!p_x_2_options.length) continue;
           const p_x_2 = choice(p_x_2_options);
 
-          const p_y_2_options = [1, 2, 3, 4].filter(
-            (n) =>
-              n + p_y_1 <= 7 &&
-              Math.abs(n - p_y_1) >= 1 &&
-              n !== p_y_1
-          );
+          const p_y_2_options = [1, 2, 3, 4].filter((n) => n + p_y_1 <= 7 && Math.abs(n - p_y_1) >= 1 && n !== p_y_1);
           if (!p_y_2_options.length) continue;
           const p_y_2 = choice(p_y_2_options);
           
-          const p_x_3_options = [1, 2, 3, 4].filter(
-            (n) =>
-              n + p_x_1 + p_x_2 <= 10 &&
-              n !== p_x_1 &&
-              n !== p_x_2
-          );
+          const p_x_3_options = [1, 2, 3, 4].filter((n) => n + p_x_1 + p_x_2 <= 10 && n !== p_x_1 && n !== p_x_2);
           if (!p_x_3_options.length) continue;
           const p_x_3 = choice(p_x_3_options);
 
-          const p_y_3_options = [1, 2, 3, 4].filter(
-            (n) =>
-              n + p_y_1 + p_y_2 <= 10 &&
-              n !== p_y_1 &&
-              n !== p_y_2
-          );
+          const p_y_3_options = [1, 2, 3, 4].filter((n) => n + p_y_1 + p_y_2 <= 10 && n !== p_y_1 && n !== p_y_2);
           if (!p_y_3_options.length) continue;
           const p_y_3 = choice(p_y_3_options);
 
@@ -279,17 +248,11 @@ const allTasks = [
             if ((k_nod * n) % 10 === 0) continue;
             k3_range.push(n);
           }
-          let k3_options =
-            k1 > 0 && k2 > 0 ? k3_range.filter((n) => n < 0) : k3_range;
+          let k3_options = k1 > 0 && k2 > 0 ? k3_range.filter((n) => n < 0) : k3_range;
           if (!k3_options.length) continue;
           const k3 = choice(k3_options);
 
-          if (
-            Math.abs(k_nod * k1) >= 100 ||
-            Math.abs(k_nod * k2) >= 100 ||
-            Math.abs(k_nod * k3) >= 100
-          )
-            continue;
+          if (Math.abs(k_nod * k1) >= 100 || Math.abs(k_nod * k2) >= 100 || Math.abs(k_nod * k3) >= 100) continue;
 
           const monomials = [
             { coeff: k_nod * k1, x_exp: p_x_nod + p_x_1, y_exp: p_y_nod + p_y_1 },
@@ -297,10 +260,7 @@ const allTasks = [
             { coeff: k_nod * k3, x_exp: p_x_nod + p_x_3, y_exp: p_y_nod + p_y_3 },
           ];
           monomials.forEach((m) => (m.total_degree = m.x_exp + m.y_exp));
-          monomials.sort(
-            (a, b) =>
-              b.total_degree - a.total_degree || b.x_exp - a.x_exp
-          );
+          monomials.sort((a, b) => (b.total_degree - a.total_degree) || (b.x_exp - a.x_exp));
 
           const fmt = (c, xv, xe, yv, ye, first) => {
             let sign = first ? "" : c < 0 ? " - " : " + ";
