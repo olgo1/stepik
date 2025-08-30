@@ -1,4 +1,4 @@
-// ================= ФАЙЛ: 8_1.1.1.js (ИСПРАВЛЕННЫЙ) =================
+// ================= ФАЙЛ: 8_1.1.1.js (ПОЛНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ) =================
 
 // ---------- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ДЛЯ TRAINER ----------
 const trainerSettings = {
@@ -30,7 +30,6 @@ function _takeVar(src, v) {
   return { exp: m[1] ? parseInt(m[1], 10) : 1, rest: src.slice(m[0].length) };
 }
 
-// --- Разрешаем одночлены, где переменная может отсутствовать
 function _parseMonomial(str, xVar, yVar) {
   let s = _strip(str);
   let sign = 1;
@@ -47,99 +46,80 @@ function _parseMonomial(str, xVar, yVar) {
     s = s.slice(mC[1].length);
   }
 
-  let xa = 0,
-    yb = 0;
+  let xa = 0, yb = 0;
+  // This loop allows variables in any order, e.g., "yx" or "xy"
   for (let step = 0; step < 2; step++) {
     let t = _takeVar(s, xVar);
-    if (t && xa === 0) {
+    if (t && xa === 0) { // check xa === 0 prevents parsing "xx"
       xa = t.exp;
       s = t.rest;
       continue;
     }
     t = _takeVar(s, yVar);
-    if (t && yb === 0) {
+    if (t && yb === 0) { // check yb === 0 prevents parsing "yy"
       yb = t.exp;
       s = t.rest;
       continue;
     }
     break;
   }
-  if (s.length !== 0) return null;
+  if (s.length !== 0) return null; // If anything is left after parsing, format is invalid
   return { coef: sign * coef, x: xa, y: yb };
 }
 
 function _parseFactorizedAnswer(raw, xVar, yVar) {
-  let s = _strip(raw);
-  if (s[0] === "(") {
-    let d = 0,
-      j = 0;
-    for (; j < s.length; j++) {
-      if (s[j] === "(") d++;
-      else if (s[j] === ")") {
-        d--;
-        if (d === 0) break;
-      }
+    let s = _strip(raw);
+
+    // Handle outer parenthesis for clarity e.g. (2x)(y+z)
+    if (s.startsWith('(')) {
+        let depth = 0, j = 0;
+        for (; j < s.length; j++) {
+            if (s[j] === '(') depth++;
+            else if (s[j] === ')') {
+                depth--;
+                if (depth === 0) break;
+            }
+        }
+        // If the closing parenthesis is right before another opening one, it's likely two factors
+        if (depth === 0 && j < s.length - 1 && s[j + 1] === '(') {
+            s = s.slice(1, j) + '*' + s.slice(j + 1); // use '*' as a separator
+        }
     }
-    if (d === 0 && s[j + 1] === "(") s = s.slice(1, j) + s.slice(j + 1);
-  }
-  let osign = 1;
-  if (s[0] === "+") s = s.slice(1);
-  else if (s[0] === "-") {
-    osign = -1;
-    s = s.slice(1);
-  }
-
-  const mK = s.match(/^(\d+)/);
-  if (!mK) return null;
-  const K = parseInt(mK[1], 10);
-  s = s.slice(mK[1].length);
-
-  let px, py, t;
-  t = _takeVar(s, xVar);
-  if (t) {
-    px = t.exp;
-    s = t.rest;
-    t = _takeVar(s, yVar);
-    if (!t) return null;
-    py = t.exp;
-    s = t.rest;
-  } else {
-    t = _takeVar(s, yVar);
-    if (!t) return null;
-    py = t.exp;
-    s = t.rest;
-    t = _takeVar(s, xVar);
-    if (!t) return null;
-    px = t.exp;
-    s = t.rest;
-  }
-  if (s[0] !== "(") return null;
-
-  let depth = 0,
-    i = 0;
-  for (; i < s.length; i++) {
-    if (s[i] === "(") depth++;
-    else if (s[i] === ")") {
-      depth--;
-      if (depth === 0) break;
+    
+    // Allow an optional minus sign at the beginning
+    let outerSign = 1;
+    if (s.startsWith('-')) {
+        outerSign = -1;
+        s = s.slice(1);
+    } else if (s.startsWith('+')) {
+        s = s.slice(1);
     }
-  }
-  if (depth !== 0) return null;
-  const inside = s.slice(1, i);
-  const tail = s.slice(i + 1);
-  if (tail.length) return null;
+    
+    // Split into outer and inner parts
+    const parts = s.split('(');
+    if (parts.length !== 2 || !parts[1].endsWith(')')) return null;
 
-  const parts = inside.replace(/-/g, "+-").split("+").filter(Boolean);
-  if (CHECK_SETTINGS.requireAtLeastTwoTerms && parts.length < 2) return null;
-
-  const terms = [];
-  for (const part of parts) {
-    const m = _parseMonomial(part, xVar, yVar);
-    if (!m) return null;
-    terms.push(m);
-  }
-  return { outer: { coef: osign * K, x: px, y: py }, inner: terms };
+    const outerPartRaw = parts[0];
+    const innerPartRaw = parts[1].slice(0, -1);
+    
+    const outerParsed = _parseMonomial(outerPartRaw, xVar, yVar);
+    if (!outerParsed) return null;
+    outerParsed.coef *= outerSign;
+    
+    // Parse the inner polynomial
+    const innerTermStrings = innerPartRaw.replace(/-/g, "+-").split('+').filter(Boolean);
+    if (CHECK_SETTINGS.requireAtLeastTwoTerms && innerTermStrings.length < 2) return null;
+    
+    const innerTerms = [];
+    for (const termStr of innerTermStrings) {
+        const parsedTerm = _parseMonomial(termStr, xVar, yVar);
+        if (!parsedTerm) return null;
+        innerTerms.push(parsedTerm);
+    }
+    
+    return { outer: outerParsed, inner: innerTerms };
 }
+
 
 function _canonFactorized(parsed, xVar, yVar) {
   const { outer, inner } = parsed;
@@ -149,21 +129,41 @@ function _canonFactorized(parsed, xVar, yVar) {
     if (db !== da) return db - da;
     return b.x - a.x;
   });
-  const fmtMono = (c, a, b) =>
-    `${c > 0 ? "+" : ""}${c}${xVar}^${a}${yVar}^${b}`;
-  let innerStr = fmtMono(
-    sorted[0].coef,
-    sorted[0].x,
-    sorted[0].y
-  ).replace(/^\+/, "");
+  
+  const formatMonomial = (c, xExp, yExp, isFirst) => {
+    let str = "";
+    if (!isFirst) {
+        str += c > 0 ? '+' : '';
+    }
+    
+    // Handle coefficient
+    if (Math.abs(c) !== 1 || (xExp === 0 && yExp === 0)) {
+      str += c;
+    } else if (c === -1) {
+      str += '-';
+    }
+    
+    // Handle variables
+    if (xExp > 0) str += xVar + (xExp > 1 ? `^${xExp}` : '');
+    if (yExp > 0) str += yVar + (yExp > 1 ? `^${yExp}` : '');
+    return str;
+  };
+  
+  let innerStr = formatMonomial(sorted[0].coef, sorted[0].x, sorted[0].y, true);
   for (let i = 1; i < sorted.length; i++) {
     const t = sorted[i];
-    innerStr += fmtMono(t.coef, t.x, t.y);
+    innerStr += formatMonomial(t.coef, t.x, t.y, false);
   }
-  const g = `${Math.abs(outer.coef)}${xVar}^${outer.x}${yVar}^${outer.y}`;
-  const sign = outer.coef < 0 ? "-" : "";
+  
+  const sign = outer.coef < 0 ? '-' : '';
+  const gcfCoeff = Math.abs(outer.coef) === 1 ? '' : Math.abs(outer.coef);
+  const gcfX = outer.x > 0 ? `${xVar}${outer.x > 1 ? `^${outer.x}`:''}` : '';
+  const gcfY = outer.y > 0 ? `${yVar}${outer.y > 1 ? `^${outer.y}`:''}` : '';
+
+  const g = `${gcfCoeff}${gcfX}${gcfY}`;
   return `${sign}${g}(${innerStr})`;
 }
+
 
 function normalizeUserAnswer(raw, vars) {
   const { x, y } = vars;
@@ -292,21 +292,9 @@ const allTasks = [
             continue;
 
           const monomials = [
-            {
-              coeff: k_nod * k1,
-              x_exp: p_x_nod + p_x_1,
-              y_exp: p_y_nod + p_y_1,
-            },
-            {
-              coeff: k_nod * k2,
-              x_exp: p_x_nod + p_x_2,
-              y_exp: p_y_nod + p_y_2,
-            },
-            {
-              coeff: k_nod * k3,
-              x_exp: p_x_nod + p_x_3,
-              y_exp: p_y_nod + p_y_3,
-            },
+            { coeff: k_nod * k1, x_exp: p_x_nod + p_x_1, y_exp: p_y_nod + p_y_1 },
+            { coeff: k_nod * k2, x_exp: p_x_nod + p_x_2, y_exp: p_y_nod + p_y_2 },
+            { coeff: k_nod * k3, x_exp: p_x_nod + p_x_3, y_exp: p_y_nod + p_y_3 },
           ];
           monomials.forEach((m) => (m.total_degree = m.x_exp + m.y_exp));
           monomials.sort(
@@ -317,55 +305,17 @@ const allTasks = [
           const fmt = (c, xv, xe, yv, ye, first) => {
             let sign = first ? "" : c < 0 ? " - " : " + ";
             if (first && c < 0) sign = "-";
-            return `${sign}${Math.abs(
-              c
-            )}${xv}<sup>${xe}</sup>${yv}<sup>${ye}</sup>`;
+            return `${sign}${Math.abs(c)}${xv}<sup>${xe}</sup>${yv}<sup>${ye}</sup>`;
           };
 
           const problemText =
-            fmt(
-              monomials[0].coeff,
-              x,
-              monomials[0].x_exp,
-              y,
-              monomials[0].y_exp,
-              true
-            ) +
-            fmt(
-              monomials[1].coeff,
-              x,
-              monomials[1].x_exp,
-              y,
-              monomials[1].y_exp,
-              false
-            ) +
-            fmt(
-              monomials[2].coeff,
-              x,
-              monomials[2].x_exp,
-              y,
-              monomials[2].y_exp,
-              false
-            );
+            fmt(monomials[0].coeff, x, monomials[0].x_exp, y, monomials[0].y_exp, true) +
+            fmt(monomials[1].coeff, x, monomials[1].x_exp, y, monomials[1].y_exp, false) +
+            fmt(monomials[2].coeff, x, monomials[2].x_exp, y, monomials[2].y_exp, false);
 
           return {
             problemText,
-            variables: {
-              k_nod,
-              k1,
-              k2,
-              k3,
-              x,
-              y,
-              p_x_nod,
-              p_y_nod,
-              p_x_1,
-              p_y_1,
-              p_x_2,
-              p_y_2,
-              p_x_3,
-              p_y_3,
-            },
+            variables: { k_nod, k1, k2, k3, x, y, p_x_nod, p_y_nod, p_x_1, p_y_1, p_x_2, p_y_2, p_x_3, p_y_3 },
           };
         } catch (_) {
           continue;
@@ -374,59 +324,44 @@ const allTasks = [
     },
 
     calculateAnswer: function (vars) {
-      const {
-        k_nod,
-        k1,
-        k2,
-        k3,
-        x,
-        y,
-        p_x_nod,
-        p_y_nod,
-        p_x_1,
-        p_y_1,
-        p_x_2,
-        p_y_2,
-        p_x_3,
-        p_y_3,
-      } = vars;
-      const gcf_string = `${k_nod}${x}^${p_x_nod}${y}^${p_y_nod}`;
+        const { k_nod, k1, k2, k3, x, y, p_x_nod, p_y_nod, p_x_1, p_y_1, p_x_2, p_y_2, p_x_3, p_y_3 } = vars;
 
-      let inner = [
-        { coeff: k1, x_exp: p_x_1, y_exp: p_y_1 },
-        { coeff: k2, x_exp: p_x_2, y_exp: p_y_2 },
-        { coeff: k3, x_exp: p_x_3, y_exp: p_y_3 },
-      ];
-      inner.forEach((m) => (m.total_degree = m.x_exp + m.y_exp));
-      inner.sort(
-        (a, b) => b.total_degree - a.total_degree || b.x_exp - a.x_exp
-      );
+        const min_px = Math.min(p_x_1, p_x_2, p_x_3);
+        const min_py = Math.min(p_y_1, p_y_2, p_y_3);
 
-      const fmt = (c, xv, xe, yv, ye) =>
-        `${c > 0 ? "+" : ""}${c}${xv}^${xe}${yv}^${ye}`;
-      let inner_str = fmt(
-        inner[0].coeff,
-        x,
-        inner[0].x_exp,
-        y,
-        inner[0].y_exp
-      ).replace(/^\+/, "");
-      inner_str += fmt(inner[1].coeff, x, inner[1].x_exp, y, inner[1].y_exp);
-      inner_str += fmt(inner[2].coeff, x, inner[2].x_exp, y, inner[2].y_exp);
-      const ans1 = `${gcf_string}(${inner_str})`.replace(/\s/g, "");
+        const gcf_x_exp = p_x_nod + min_px;
+        const gcf_y_exp = p_y_nod + min_py;
+        
+        const gcf_string = `${k_nod}${x}^${gcf_x_exp}${y}^${gcf_y_exp}`;
 
-      let inner_neg = fmt(
-        -inner[0].coeff,
-        x,
-        inner[0].x_exp,
-        y,
-        inner[0].y_exp
-      ).replace(/^\+/, "");
-      inner_neg += fmt(-inner[1].coeff, x, inner[1].x_exp, y, inner[1].y_exp);
-      inner_neg += fmt(-inner[2].coeff, x, inner[2].x_exp, y, inner[2].y_exp);
-      const ans2 = `-${gcf_string}(${inner_neg})`.replace(/\s/g, "");
+        let inner = [
+          { coeff: k1, x_exp: p_x_1 - min_px, y_exp: p_y_1 - min_py },
+          { coeff: k2, x_exp: p_x_2 - min_px, y_exp: p_y_2 - min_py },
+          { coeff: k3, x_exp: p_x_3 - min_px, y_exp: p_y_3 - min_py },
+        ];
+        
+        inner.forEach(m => m.total_degree = m.x_exp + m.y_exp);
+        inner.sort((a, b) => (b.total_degree - a.total_degree) || (b.x_exp - a.x_exp));
 
-      return [ans1, ans2];
-    },
+        const formatMonomialInParentheses = (c, xv, xe, yv, ye) => {
+            const sign = c > 0 ? '+' : '';
+            const coeffPart = (Math.abs(c) === 1 && (xe > 0 || ye > 0)) ? (c === -1 ? '-' : (sign === '+' ? '+' : '')) : `${sign}${c}`;
+            const x_part = xe > 0 ? (xe > 1 ? `${xv}^${xe}` : xv) : '';
+            const y_part = ye > 0 ? (ye > 1 ? `${yv}^${ye}` : yv) : '';
+            return `${coeffPart}${x_part}${y_part}`;
+        };
+        
+        let inner_str = formatMonomialInParentheses(inner[0].coeff, x, inner[0].x_exp, y, inner[0].y_exp).replace(/^\+/, '');
+        inner_str += formatMonomialInParentheses(inner[1].coeff, x, inner[1].x_exp, y, inner[1].y_exp);
+        inner_str += formatMonomialInParentheses(inner[2].coeff, x, inner[2].x_exp, y, inner[2].y_exp);
+        const ans1 = `${gcf_string}(${inner_str})`.replace(/\s/g, '');
+
+        let inner_neg_str = formatMonomialInParentheses(-inner[0].coeff, x, inner[0].x_exp, y, inner[0].y_exp).replace(/^\+/, '');
+        inner_neg_str += formatMonomialInParentheses(-inner[1].coeff, x, inner[1].x_exp, y, inner[1].y_exp);
+        inner_neg_str += formatMonomialInParentheses(-inner[2].coeff, x, inner[2].x_exp, y, inner[2].y_exp);
+        const ans2 = `-${gcf_string}(${inner_neg_str})`.replace(/\s/g, '');
+
+        return [ans1, ans2];
+      },
   },
 ];
