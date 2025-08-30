@@ -1,11 +1,15 @@
 // ================= ФАЙЛ: trainer.js =================
+// Минимальный тренажёр без лишних подсказок/placeholder’ов.
+// Ожидает, что 8_1.1.1.js уже подключён и определил:
+//   - trainerSettings
+//   - allTasks
+//   - normalizeUserAnswer
+//   - isAnswerCorrect
 
 (() => {
-  // ---- DOM helpers ----
-  const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  // -------- helpers --------
+  const $  = (sel) => document.querySelector(sel);
 
-  // ---- Basic sanity checks for globals from 8_1.1.1.js ----
   function assertGlobals() {
     const missing = [];
     if (typeof trainerSettings === 'undefined') missing.push('trainerSettings');
@@ -15,16 +19,15 @@
     return missing;
   }
 
-  // ---- State ----
+  // -------- state --------
   const state = {
-    selected: [],          // [{ task, vars, el: {container, input, feedback} }]
-    startedAt: null,
+    items: [],             // [{ task, vars, el:{wrap,input,feedback}, problemText }]
+    totalSeconds: 600,
     timerId: null,
-    totalSeconds: (typeof trainerSettings !== 'undefined' && trainerSettings.totalTime) || 600,
     finished: false,
   };
 
-  // ---- Timer ----
+  // -------- timer --------
   function fmtTime(sec) {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -32,78 +35,60 @@
   }
 
   function startTimer() {
+    const total = state.totalSeconds;
     const $timer = $('#timer');
     const $bar = $('.progress-bar');
-    const total = state.totalSeconds;
-    let elapsed = 0;
+    let tick = 0;
 
-    $timer.textContent = fmtTime(total - elapsed);
+    $timer.textContent = fmtTime(total);
     $bar.style.width = '0%';
 
     state.timerId = setInterval(() => {
       if (state.finished) { clearInterval(state.timerId); return; }
-      elapsed++;
-      const left = Math.max(total - elapsed, 0);
+      tick++;
+      const left = Math.max(total - tick, 0);
       $timer.textContent = fmtTime(left);
-      const pct = Math.min((elapsed / total) * 100, 100);
-      $bar.style.width = `${pct}%`;
-
-      if (left <= 0) {
+      $bar.style.width = `${Math.min((tick / total) * 100, 100)}%`;
+      if (left === 0) {
         clearInterval(state.timerId);
         state.finished = true;
-        autoCheckWhenTimeUp();
+        const btn = $('#checkBtn');
+        if (btn && !btn.disabled) btn.click();
       }
     }, 1000);
   }
 
-  function autoCheckWhenTimeUp() {
-    // Автоматическая проверка при окончании времени
-    // Имитация клика по «Проверить», если еще не нажимали
-    try {
-      const btn = $('#checkBtn');
-      if (btn && !btn.disabled) btn.click();
-    } catch (_){}
-  }
-
-  // ---- UI building ----
-  function buildProblemCard(idx, html) {
+  // -------- UI --------
+  function buildProblemCard(index, html) {
     const wrap = document.createElement('div');
     wrap.className = 'problem-card';
 
     const title = document.createElement('div');
     title.className = 'problem-title';
-    title.innerHTML = `Задание ${idx + 1}: <span class="problem-text">${html}</span>`;
+    title.innerHTML = `Задание ${index + 1}: <span class="problem-text">${html}</span>`;
 
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'answer-input';
-    input.placeholder = 'Введите факторизацию, напр.: 6k^5p^7(6k^4p^2+13k^2p^4+11)';
     input.autocomplete = 'off';
     input.spellcheck = false;
-
-    const small = document.createElement('div');
-    small.className = 'help-line';
-    small.innerHTML = 'Разрешены формы: <code>G(…)</code> и <code>-G(-…)</code>, где <code>G</code> — наибольший общий множитель.';
+    input.setAttribute('size', '80'); // пошире поле, без вмешательства в CSS
 
     const feedback = document.createElement('div');
     feedback.className = 'feedback';
 
     wrap.appendChild(title);
     wrap.appendChild(input);
-    wrap.appendChild(small);
     wrap.appendChild(feedback);
 
     return { wrap, input, feedback };
   }
 
-  // ---- Rendering and generation ----
   function pickTasks() {
-    const howMany = trainerSettings.problemsToSelect || 1;
+    const cnt = (trainerSettings && trainerSettings.problemsToSelect) || 1;
     const picked = [];
-
-    // сейчас у нас один тип — возьмём по generate()
-    for (let i = 0; i < howMany; i++) {
-      const task = allTasks[0];
+    for (let i = 0; i < cnt; i++) {
+      const task = allTasks[0];                   // у нас один тип
       const { problemText, variables } = task.generate();
       picked.push({ task, vars: variables, problemText });
     }
@@ -111,39 +96,42 @@
   }
 
   function render() {
-    // header
+    // заголовок
     $('#trainer-title').textContent = trainerSettings.title || 'Тренажёр';
-    $('#trainer-subtitle').textContent = 'Разложите многочлен на множители методом вынесения общего множителя';
+    // без подзаголовка
+    const st = $('#trainer-subtitle');
+    if (st) st.textContent = '';
 
-    // problems
-    const $container = $('#problems-container');
-    $container.innerHTML = '';
-
-    state.selected = pickTasks().map((p, i) => {
-      const { wrap, input, feedback } = buildProblemCard(i, p.problemText);
-      $container.appendChild(wrap);
-      return { ...p, el: { container: wrap, input, feedback } };
+    // задачи
+    const container = $('#problems-container');
+    container.innerHTML = '';
+    state.items = pickTasks().map((p, i) => {
+      const el = buildProblemCard(i, p.problemText);
+      container.appendChild(el.wrap);
+      return { ...p, el };
     });
 
-    // buttons
-    const $check = $('#checkBtn');
-    $check.disabled = false;
-    $check.onclick = onCheck;
+    // кнопки
+    const btn = $('#checkBtn');
+    btn.disabled = false;
+    btn.onclick = onCheck;
 
-    const $print = $('#printBtn');
-    if ($print) {
-      $print.onclick = () => window.print();
+    const printBtn = $('#printBtn');
+    if (printBtn) {
+      printBtn.onclick = () => window.print();
     }
 
-    // timer
+    // таймер
+    state.totalSeconds = trainerSettings.totalTime || 600;
+    state.finished = false;
+    if (state.timerId) clearInterval(state.timerId);
     startTimer();
   }
 
-  // ---- Checking ----
-  function showFeedback(el, type, message, extraHtml = '') {
-    // type: 'ok' | 'format' | 'wrong' | 'error'
-    el.className = `feedback ${type}`;
-    el.innerHTML = message + (extraHtml ? `<div class="details">${extraHtml}</div>` : '');
+  // -------- check --------
+  function showFeedback(node, type, text, detailsHtml = '') {
+    node.className = `feedback ${type}`; // type: ok | wrong | format | error
+    node.innerHTML = text + (detailsHtml ? `<div class="details">${detailsHtml}</div>` : '');
   }
 
   function onCheck() {
@@ -151,60 +139,58 @@
     if (state.timerId) clearInterval(state.timerId);
     $('#checkBtn').disabled = true;
 
-    let correctCount = 0;
+    let ok = 0;
+    for (const item of state.items) {
+      const { task, vars, el } = item;
+      const raw = (el.input.value || '').trim();
 
-    state.selected.forEach(({ task, vars, el }, idx) => {
-      const raw = el.input.value || '';
-      // если пусто — сразу отметка
-      if (!raw.trim()) {
-        showFeedback(el.feedback, 'format', 'Пустой ответ. Введите факторизацию, пример: <code>6k^5p^7(6k^4p^2+13k^2p^4+11)</code>');
-        return;
+      if (!raw) {
+        showFeedback(el.feedback, 'format', 'Пустой ответ.');
+        continue;
       }
 
       try {
         const res = isAnswerCorrect(raw, task, vars);
         if (res.error === 'format') {
-          const examples = `Ожидается форма <code>G(…)</code> или <code>-G(-…)</code>, где <code>G=${vars.k_nod}${vars.x}^${vars.p_x_nod}${vars.y}^${vars.p_y_nod}</code>.`;
-          showFeedback(el.feedback, 'format', 'Неверный формат ответа.', examples);
-          return;
+          showFeedback(el.feedback, 'format', 'Неверный формат ответа.');
+          continue;
         }
         if (res.correct) {
-          correctCount++;
+          ok++;
           showFeedback(el.feedback, 'ok', 'Верно!');
         } else {
-          // показать оба допустимых эталона
           const answers = task.calculateAnswer(vars);
           const pretty = answers.map(a => `<code>${a}</code>`).join('<br>');
           showFeedback(el.feedback, 'wrong', 'Неверно.', `Правильные варианты:<br>${pretty}`);
         }
       } catch (e) {
         console.error(e);
-        showFeedback(el.feedback, 'error', 'Внутренняя ошибка при проверке. Посмотрите консоль браузера.');
+        showFeedback(el.feedback, 'error', 'Ошибка при проверке. Откройте консоль браузера.');
       }
-    });
+    }
 
-    // Итог
-    const $results = $('#results');
-    const $score = $('#score-text');
-    $results.classList.remove('hidden');
-    $score.textContent = `Результат: ${correctCount} из ${state.selected.length}`;
+    const results = $('#results');
+    const score = $('#score-text');
+    if (results && score) {
+      results.classList.remove('hidden');
+      score.textContent = `Результат: ${ok} из ${state.items.length}`;
+    }
   }
 
-  // ---- Boot ----
+  // -------- boot --------
   document.addEventListener('DOMContentLoaded', () => {
     const missing = assertGlobals();
     if (missing.length) {
-      // Покажем аккуратно, чтобы было видно проблему и пользователю
-      const $container = $('#problems-container');
-      $container.innerHTML = `
-        <div class="error-box">
-          Не найдены необходимые скрипты: <b>${missing.join(', ')}</b>.<br>
-          Проверьте подключение <code>8_1.1.1.js</code> перед <code>trainer.js</code>.
-        </div>`;
-      $('#checkBtn').disabled = true;
+      const box = document.createElement('div');
+      box.className = 'error-box';
+      box.innerHTML = `Не найдены необходимые скрипты: <b>${missing.join(', ')}</b>.<br>
+      Проверьте подключение <code>8_1.1.1.js</code> перед <code>trainer.js</code>.`;
+      const container = $('#problems-container');
+      if (container) container.appendChild(box);
+      const btn = $('#checkBtn');
+      if (btn) btn.disabled = true;
       return;
     }
     render();
   });
-
 })();
