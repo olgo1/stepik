@@ -35,7 +35,27 @@ const allTasks = [
                     
                     const k1 = choice([3, 4, 6, 7, 8, 9, -3, -4, -6, -7, -8, -9]);
                     const k2 = choice([5, 11, 13, -5, -11, -13].filter(n => gcd(Math.abs(k1), Math.abs(n)) === 1));
-                    const k3 = choice([2, 17, 19, -2, -17, -19].filter(n => gcd(Math.abs(k1), Math.abs(n)) === 1 && gcd(Math.abs(k2), Math.abs(n)) === 1));
+                    const k3_max = Math.floor((200-1) / k_nod);
+                    let k3_range = [];
+                    for (let n = -19; n < 20; n++){
+                        if (Math.abs(n) >= 2 && n <= k3_max && gcd(Math.abs(k1), Math.abs(n)) === 1 && gcd(Math.abs(k2), Math.abs(n)) === 1 && (k1*n)<200 && (k2*n)<200 && (k1*n)%10!==0 && (k2*n)%10!==0){
+                            k3_range.push(n);
+                        }
+                    }
+                    let k3_options = [];
+                    // А теперь применяем новую логику
+                    if (k1 > 0 && k2 > 0) {
+                        // Если k1 и k2 положительные, k3 должен быть отрицательным
+                        k3_options = k3_range.filter(n => n < 0);
+                    } else {
+                        // Иначе k3 может быть любым
+                        k3_options = k3_range;
+                    }
+                    // Проверяем, остались ли у нас вообще варианты
+                    if (k3_options.length === 0) {
+                        continue; // Если вариантов нет, начинаем всю генерацию заново
+                    }
+                    const k3 = choice(k3_options);
 
                     // --- ИЗМЕНЁННАЯ ЛОГИКА ГЕНЕРАЦИИ СТЕПЕНЕЙ ---
                     const p_x_nod = randint(2, 6);
