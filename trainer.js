@@ -1,27 +1,27 @@
 // ================= ФАЙЛ: trainer.js =================
 // Минимальный тренажёр без лишних подсказок/placeholder’ов.
 // Ожидает, что 8_1.1.1.js уже подключён и определил:
-//   - trainerSettings
-//   - allTasks
-//   - normalizeUserAnswer
-//   - isAnswerCorrect
+//    - trainerSettings
+//    - allTasks
+//    - normalizeUserAnswer
+//    - isAnswerCorrect
 
 (() => {
   // -------- helpers --------
-  const $  = (sel) => document.querySelector(sel);
+  const $ = (sel) => document.querySelector(sel);
 
   function assertGlobals() {
     const missing = [];
     if (typeof trainerSettings === 'undefined') missing.push('trainerSettings');
-    if (typeof allTasks === 'undefined')       missing.push('allTasks');
+    if (typeof allTasks === 'undefined') missing.push('allTasks');
     if (typeof normalizeUserAnswer === 'undefined') missing.push('normalizeUserAnswer');
-    if (typeof isAnswerCorrect === 'undefined')     missing.push('isAnswerCorrect');
+    if (typeof isAnswerCorrect === 'undefined') missing.push('isAnswerCorrect');
     return missing;
   }
 
   // -------- state --------
   const state = {
-    items: [],             // [{ task, vars, el:{wrap,input,feedback}, problemText }]
+    items: [],        // [{ task, vars, el:{wrap,input,feedback}, problemText }]
     totalSeconds: 600,
     timerId: null,
     finished: false,
@@ -37,18 +37,18 @@
   function startTimer() {
     const total = state.totalSeconds;
     const $timer = $('#timer');
-    const $bar = $('.progress-bar');
+    const $barInner = $('.progress-bar-inner');
     let tick = 0;
 
     $timer.textContent = fmtTime(total);
-    $bar.style.width = '0%';
+    if ($barInner) $barInner.style.width = '0%';
 
     state.timerId = setInterval(() => {
       if (state.finished) { clearInterval(state.timerId); return; }
       tick++;
       const left = Math.max(total - tick, 0);
       $timer.textContent = fmtTime(left);
-      $bar.style.width = `${Math.min((tick / total) * 100, 100)}%`;
+      if ($barInner) $barInner.style.width = `${Math.min((tick / total) * 100, 100)}%`;
       if (left === 0) {
         clearInterval(state.timerId);
         state.finished = true;
@@ -65,15 +65,15 @@
 
     const title = document.createElement('div');
     title.className = 'problem-title';
-    title.innerHTML = `Задание ${index + 1}: <span class="problem-text">${html}</span>`;
+    // ИЗМЕНЕНИЕ 1: Убран текст "Задание..."
+    title.innerHTML = `<span class="problem-text">${html}</span>`;
 
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'answer-input';
     input.autocomplete = 'off';
     input.spellcheck = false;
-    input.setAttribute('size', '80'); // пошире поле, без вмешательства в CSS
-
+    
     const feedback = document.createElement('div');
     feedback.className = 'feedback';
 
@@ -88,7 +88,7 @@
     const cnt = (trainerSettings && trainerSettings.problemsToSelect) || 1;
     const picked = [];
     for (let i = 0; i < cnt; i++) {
-      const task = allTasks[0];                   // у нас один тип
+      const task = allTasks[0]; // у нас один тип
       const { problemText, variables } = task.generate();
       picked.push({ task, vars: variables, problemText });
     }
@@ -160,7 +160,9 @@
           showFeedback(el.feedback, 'ok', 'Верно!');
         } else {
           const answers = task.calculateAnswer(vars);
-          const pretty = answers.map(a => `<code>${a}</code>`).join('<br>');
+          // ИЗМЕНЕНИЕ 2: Форматирование степеней в правильных ответах
+          const formattedAnswers = answers.map(a => a.replace(/\^(\d+)/g, '<sup>$1</sup>')); 
+          const pretty = formattedAnswers.join('<br>');
           showFeedback(el.feedback, 'wrong', 'Неверно.', `Правильные варианты:<br>${pretty}`);
         }
       } catch (e) {
