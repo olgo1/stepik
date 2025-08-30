@@ -126,11 +126,14 @@ document.addEventListener('DOMContentLoaded', () => {
             generatedProblems[index].userAnswer = userValue === '' ? 'нет ответа' : userAnswer;
             
             let isCorrect = false;
-            if (typeof correctAnswer === 'string') {
-                isCorrect = userAnswer === correctAnswer;
-            } else if (!isNaN(userAnswer)) {
-                isCorrect = Math.round(userAnswer * 100) === Math.round(correctAnswer * 100);
-            }
+                if (Array.isArray(correctAnswer)) {
+                    // Если правильный ответ - это массив (как у нас), проверяем, есть ли ответ ученика в этом массиве
+                    isCorrect = correctAnswer.includes(userAnswer);
+                } else if (typeof correctAnswer === 'string') {
+                    isCorrect = userAnswer === correctAnswer;
+                } else if (!isNaN(userAnswer)) {
+                    isCorrect = Math.round(userAnswer * 100) === Math.round(correctAnswer * 100);
+                }
 
             if (isCorrect) {
                 progressSquares[index].classList.add('correct');
