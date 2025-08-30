@@ -1,24 +1,23 @@
 // ================= ФАЙЛ: 8_1.1.1.js =================
 //
-// ОПИСАНИЕ:
-// - Генерирует выражение из трёх одночленов: C_i * x^a * y^b,
-//   где C_i = k_nod * k_i, |C_i| < 100 и C_i не оканчивается на 0.
-// - Общий вынесенный множитель: k_nod * x^p_x_nod * y^p_y_nod.
-// - Внутри скобок три одночлена (k1,k2,k3) c ограничениями по взаимной простоте.
-// - Две корректные формы ответа:  G*(...)  и  -G*(-...).
-// - Парсер терпим к пробелам, порядку xy|yx, отсутствию ^1, знакам +/-, и т.п.
+// Генерирует выражение из 3 одночленов и проверяет факторизацию методом вынесения
+// наибольшего общего множителя (G). Допустимы две формы ответа:
+//   1)  G(…)
+//   2) -G(-…)
+// Парсер терпим к пробелам, порядку переменных (xy или yx) и отсутствию одной
+// переменной в одночлене внутри скобок (тогда её степень считается 0).
 
 // ---------- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ДЛЯ TRAINER ----------
 const trainerSettings = {
   title: 'Разложение многочлена на множители',
-  totalTime: 600,           // 10 минут
-  problemsToSelect: 1       // пока один тип задачи
+  totalTime: 600,
+  problemsToSelect: 1
 };
 
 // ---------- НАСТРОЙКИ ПРОВЕРКИ ----------
 const CHECK_SETTINGS = {
-  allowUnfactored: false,       // если true — можно засчитывать "не вынесен" как корректно (по умолчанию выключено)
-  requireAtLeastTwoTerms: true  // внутри скобок должна быть сумма минимум из двух одночленов
+  allowUnfactored: false,        // если true — можно засчитать и «не вынесен»
+  requireAtLeastTwoTerms: true   // внутри скобок минимум два одночлена
 };
 
 // ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
@@ -34,23 +33,22 @@ function _takeVar(src, v){
   return { exp: m[1] ? parseInt(m[1],10) : 1, rest: src.slice(m[0].length) };
 }
 
-// одночлен вида  [±][coef?] x^a y^b  (порядок xy / yx допускается)
-// РАЗРЕШАЕМ одночлены вида: 3k^4p^2,  -13p^4,  +7k^2  (одна переменная может отсутствовать)
+// --- Разрешаем одночлены вида: 3k^4n^2, -11k^3, +8n^2, а также чистые константы (+11)
 function _parseMonomial(str, xVar, yVar){
   let s = _strip(str);
   let sign = 1;
   if (s[0] === '+') s = s.slice(1);
   else if (s[0] === '-') { sign = -1; s = s.slice(1); }
 
-  // коэффициент (необязательный)
+  // коэффициент (необязателен), по умолчанию 1
   const mC = s.match(/^(\d+)/);
   let coef = 1;
   if (mC){ coef = parseInt(mC[1],10); s = s.slice(mC[1].length); }
 
-  // степени по умолчанию 0 — переменная может не встречаться
+  // степени по умолчанию 0 (переменная может отсутствовать)
   let xa = 0, yb = 0;
 
-  // забираем до двух блоков переменных в любом порядке (xy или yx)
+  // забираем до двух блоков переменных в любом порядке
   for (let step = 0; step < 2; step++) {
     let t = _takeVar(s, xVar);
     if (t && xa === 0) { xa = t.exp; s = t.rest; continue; }
@@ -59,27 +57,24 @@ function _parseMonomial(str, xVar, yVar){
     break; // больше переменных нет
   }
 
-  // должен остаться пустой хвост; и хотя бы ОДНА переменная должна встретиться
+  // хвост должен быть пустой
   if (s.length !== 0) return null;
-  if (xa === 0 && yb === 0) return null;
 
   return { coef: sign*coef, x: xa, y: yb };
 }
 
-// разбор факторизованной формы: [±]K x^px y^py ( ±mono ±mono ... )
+// --- Разбор факторизованной формы: [±]K x^px y^py ( ±mono ±mono ... )
 function _parseFactorizedAnswer(raw, xVar, yVar){
   let s = _strip(raw);
 
-  // необязательные внешние скобки вокруг первого множителя: (G)(...)
+  // необязательные внешние скобки вокруг G: (G)(...)
   if (s[0]==='(') {
     let d=0, j=0;
     for (; j<s.length; j++){
       if (s[j]==='(') d++;
       else if (s[j]===')'){ d--; if(d===0) break; }
     }
-    if (d===0 && s[j+1]==='(') { // была форма (G)(...)
-      s = s.slice(1, j) + s.slice(j+1);
-    }
+    if (d===0 && s[j+1]==='(') s = s.slice(1, j) + s.slice(j+1);
   }
 
   // внешний знак
@@ -101,8 +96,7 @@ function _parseFactorizedAnswer(raw, xVar, yVar){
     py = t.exp; s = t.rest;
   } else {
     t = _takeVar(s, yVar); if(!t) return null;
-    py = t.exp; s = s.slice(t.rest.length ? s.length - t.rest.length : s.length); // корректно обновили
-    s = t.rest;
+    py = t.exp; s = t.rest;
     t = _takeVar(s, xVar); if(!t) return null;
     px = t.exp; s = t.rest;
   }
@@ -134,7 +128,7 @@ function _parseFactorizedAnswer(raw, xVar, yVar){
   return { outer: {coef: osign*K, x:px, y:py}, inner: terms };
 }
 
-// канонизация факторизованной записи (для сравнения)
+// --- Канонизация факторизованной записи (для сравнения)
 function _canonFactorized(parsed, xVar, yVar){
   const { outer, inner } = parsed;
   const sorted = [...inner].sort((a,b)=>{
@@ -153,7 +147,7 @@ function _canonFactorized(parsed, xVar, yVar){
   return `${sign}${g}(${innerStr})`;
 }
 
-// развёртка исходного полинома (если allowUnfactored=true)
+// --- Развёртка исходного полинома (если allowUnfactored=true)
 function _canonExpanded(monos, xVar, yVar){
   const sorted = [...monos].sort((a,b)=>{
     const da = a.x_exp + a.y_exp, db = b.x_exp + b.y_exp;
@@ -168,7 +162,7 @@ function _canonExpanded(monos, xVar, yVar){
   return s;
 }
 
-// Публичное API для trainer.js
+// --- Публичное API для trainer.js ---
 function normalizeUserAnswer(raw, vars){
   const { x, y } = vars;
   const parsed = _parseFactorizedAnswer(raw, x, y);
@@ -189,16 +183,13 @@ function isAnswerCorrect(userRaw, task, vars){
         { coeff: vars.k_nod*vars.k3, x_exp: vars.p_x_nod + vars.p_x_3, y_exp: vars.p_y_nod + vars.p_y_3 },
       ];
       const expandedCanon = _canonExpanded(monomials, vars.x, vars.y).replace(/\s/g,'');
-      if (_strip(userRaw) === expandedCanon) {
-        return { correct:true, variant:'unfactored' };
-      }
+      if (_strip(userRaw) === expandedCanon) return { correct:true, variant:'unfactored' };
     }
     return { correct:false, error:'format' };
   }
 
   const normalized = normRes.normalized;
-  const correct = answers.includes(normalized);
-  return { correct, expected: answers, normalized };
+  return { correct: answers.includes(normalized), expected: answers, normalized };
 }
 
 // ---------- ОПИСАНИЕ ЗАДАНИЙ ----------
@@ -220,7 +211,7 @@ const allTasks = [
           if (!k2_candidates.length) continue;
           const k2 = choice(k2_candidates);
 
-          // k_nod = p1*p2 из {2,3,5,7}, без хвоста 0, и чтобы |k_nod*k1|,|k_nod*k2|<100
+          // k_nod = p1*p2 из {2,3,5,7}, без хвоста 0, и |k_nod*k1|,|k_nod*k2|<100
           const p_set=[2,3,5,7];
           const possible_nods=[];
           for (const p1 of p_set){
@@ -234,7 +225,7 @@ const allTasks = [
           if(!possible_nods.length) continue;
           const k_nod=choice(possible_nods);
 
-          // Степени (ваша логика)
+          // Степени (логика из твоего варианта)
           const p_x_nod=randint(2,6);
           const p_y_nod=choice([1,2,3,4,5,6].filter(n=>n!==p_x_nod));
 
@@ -331,5 +322,5 @@ const allTasks = [
   }
 ];
 
-// (опционально для тестов локально)
+// (для локальных тестов можно экспортировать)
 // if (typeof module !== 'undefined') { module.exports = { trainerSettings, allTasks, normalizeUserAnswer, isAnswerCorrect }; }
