@@ -35,28 +35,34 @@ function _takeVar(src, v){
 }
 
 // одночлен вида  [±][coef?] x^a y^b  (порядок xy / yx допускается)
+// РАЗРЕШАЕМ одночлены вида: 3k^4p^2,  -13p^4,  +7k^2  (одна переменная может отсутствовать)
 function _parseMonomial(str, xVar, yVar){
   let s = _strip(str);
   let sign = 1;
   if (s[0] === '+') s = s.slice(1);
   else if (s[0] === '-') { sign = -1; s = s.slice(1); }
 
+  // коэффициент (необязательный)
   const mC = s.match(/^(\d+)/);
   let coef = 1;
   if (mC){ coef = parseInt(mC[1],10); s = s.slice(mC[1].length); }
 
-  let xa, yb, t = _takeVar(s, xVar);
-  if (t){
-    xa = t.exp; s = t.rest;
-    t = _takeVar(s, yVar); if(!t) return null;
-    yb = t.exp; s = t.rest;
-  } else {
-    t = _takeVar(s, yVar); if(!t) return null;
-    yb = t.exp; s = t.rest;
-    t = _takeVar(s, xVar); if(!t) return null;
-    xa = t.exp; s = t.rest;
+  // степени по умолчанию 0 — переменная может не встречаться
+  let xa = 0, yb = 0;
+
+  // забираем до двух блоков переменных в любом порядке (xy или yx)
+  for (let step = 0; step < 2; step++) {
+    let t = _takeVar(s, xVar);
+    if (t && xa === 0) { xa = t.exp; s = t.rest; continue; }
+    t = _takeVar(s, yVar);
+    if (t && yb === 0) { yb = t.exp; s = t.rest; continue; }
+    break; // больше переменных нет
   }
-  if (s.length) return null;
+
+  // должен остаться пустой хвост; и хотя бы ОДНА переменная должна встретиться
+  if (s.length !== 0) return null;
+  if (xa === 0 && yb === 0) return null;
+
   return { coef: sign*coef, x: xa, y: yb };
 }
 
