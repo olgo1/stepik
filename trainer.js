@@ -1,246 +1,210 @@
-// ================= ФАЙЛ: 8_1.1.1.js =================
+// ================= ФАЙЛ: trainer.js =================
 
-// --- Настройки для тренажёра ---
-const trainerSettings = {
-    title: 'Разложение многочлена на множители',
-    totalTime: 600, // 10 минут в секундах
-    problemsToSelect: 1
-};
+(() => {
+  // ---- DOM helpers ----
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-// --- Вспомогательные функции ---
-function gcd(a, b) { return b === 0 ? Math.abs(a) : gcd(b, a % b); }
-const choice  = (arr) => arr[Math.floor(Math.random() * arr.length)];
-const randint = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-// --- Вспомогательные для парсинга/сравнения ---
-function _strip(s){ return (s||'').replace(/\s+/g,''); }
-function _takeVar(src, v){
-  const re = new RegExp('^' + v + '(?:\\^(\\d+))?');
-  const m = src.match(re);
-  if(!m) return null;
-  return { exp: m[1] ? parseInt(m[1],10) : 1, rest: src.slice(m[0].length) };
-}
-
-function _parseMonomial(str, xVar, yVar){
-  let s = _strip(str);
-  let sign = 1;
-  if (s[0] === '+') s = s.slice(1);
-  else if (s[0] === '-') { sign = -1; s = s.slice(1); }
-
-  const mC = s.match(/^(\d+)/);
-  let coef = 1;
-  if (mC){ coef = parseInt(mC[1],10); s = s.slice(mC[1].length); }
-
-  let xa, yb, t = _takeVar(s, xVar);
-  if (t){
-    xa = t.exp; s = t.rest;
-    t = _takeVar(s, yVar); if(!t) return null;
-    yb = t.exp; s = t.rest;
-  } else {
-    t = _takeVar(s, yVar); if(!t) return null;
-    yb = t.exp; s = t.rest;
-    t = _takeVar(s, xVar); if(!t) return null;
-    xa = t.exp; s = t.rest;
-  }
-  if (s.length) return null;
-  return { coef: sign*coef, x: xa, y: yb };
-}
-
-function _parseFactorizedAnswer(raw, xVar, yVar){
-  let s = _strip(raw);
-  let osign = 1;
-  if (s[0] === '+') s = s.slice(1);
-  else if (s[0] === '-') { osign = -1; s = s.slice(1); }
-
-  const mK = s.match(/^(\d+)/);
-  if (!mK) return null;
-  const K = parseInt(mK[1],10);
-  s = s.slice(mK[1].length);
-
-  let px, py, t = _takeVar(s, xVar);
-  if (t){
-    px = t.exp; s = t.rest;
-    t = _takeVar(s, yVar); if(!t) return null;
-    py = t.exp; s = t.rest;
-  } else {
-    t = _takeVar(s, yVar); if(!t) return null;
-    py = t.exp; s = t.rest;
-    t = _takeVar(s, xVar); if(!t) return null;
-    px = t.exp; s = t.rest;
+  // ---- Basic sanity checks for globals from 8_1.1.1.js ----
+  function assertGlobals() {
+    const missing = [];
+    if (typeof trainerSettings === 'undefined') missing.push('trainerSettings');
+    if (typeof allTasks === 'undefined')       missing.push('allTasks');
+    if (typeof normalizeUserAnswer === 'undefined') missing.push('normalizeUserAnswer');
+    if (typeof isAnswerCorrect === 'undefined')     missing.push('isAnswerCorrect');
+    return missing;
   }
 
-  if (s[0] !== '(') return null;
-  let depth=0, i=0;
-  for (; i<s.length; i++){
-    if (s[i]==='(') depth++;
-    else if (s[i]===')'){ depth--; if(depth===0) break; }
-  }
-  if (depth!==0) return null;
-  const inside = s.slice(1, i);
-  const tail = s.slice(i+1);
-  if (tail.length) return null;
+  // ---- State ----
+  const state = {
+    selected: [],          // [{ task, vars, el: {container, input, feedback} }]
+    startedAt: null,
+    timerId: null,
+    totalSeconds: (typeof trainerSettings !== 'undefined' && trainerSettings.totalTime) || 600,
+    finished: false,
+  };
 
-  const parts = inside.replace(/-/g,'+-').split('+').filter(Boolean);
-  if (parts.length < 2) return null;
-
-  const terms = [];
-  for (const part of parts){
-    const m = _parseMonomial(part, xVar, yVar);
-    if (!m) return null;
-    terms.push(m);
+  // ---- Timer ----
+  function fmtTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   }
 
-  return { outer: {coef: osign*K, x:px, y:py}, inner: terms };
-}
+  function startTimer() {
+    const $timer = $('#timer');
+    const $bar = $('.progress-bar');
+    const total = state.totalSeconds;
+    let elapsed = 0;
 
-function _canonFactorized(parsed, xVar, yVar){
-  const { outer, inner } = parsed;
-  const sorted = [...inner].sort((a,b)=>{
-    const da = a.x + a.y, db = b.x + b.y;
-    if (db !== da) return db - da;
-    return b.x - a.x;
-  });
-  const fmtMono = (c, a, b) => `${c>0?'+':''}${c}${xVar}^${a}${yVar}^${b}`;
-  let innerStr = fmtMono(sorted[0].coef, sorted[0].x, sorted[0].y).replace(/^\+/, '');
-  for (let i=1;i<sorted.length;i++){
-    const t = sorted[i];
-    innerStr += fmtMono(t.coef, t.x, t.y);
-  }
-  const g = `${Math.abs(outer.coef)}${xVar}^${outer.x}${yVar}^${outer.y}`;
-  const sign = outer.coef < 0 ? '-' : '';
-  return `${sign}${g}(${innerStr})`;
-}
+    $timer.textContent = fmtTime(total - elapsed);
+    $bar.style.width = '0%';
 
-function normalizeUserAnswer(raw, vars){
-  const { x, y } = vars;
-  const parsed = _parseFactorizedAnswer(raw, x, y);
-  if (!parsed) return { ok:false, reason:'format', normalized:null };
-  const norm = _canonFactorized(parsed, x, y).replace(/\s/g,'');
-  return { ok:true, normalized:norm };
-}
+    state.timerId = setInterval(() => {
+      if (state.finished) { clearInterval(state.timerId); return; }
+      elapsed++;
+      const left = Math.max(total - elapsed, 0);
+      $timer.textContent = fmtTime(left);
+      const pct = Math.min((elapsed / total) * 100, 100);
+      $bar.style.width = `${pct}%`;
 
-function isAnswerCorrect(userRaw, task, vars){
-  const answers = task.calculateAnswer(vars).map(s=>s.replace(/\s/g,''));
-  const normRes = normalizeUserAnswer(userRaw, vars);
-  if (!normRes.ok) return { correct:false, error:'format' };
-  const normalized = normRes.normalized;
-  return { correct: answers.includes(normalized), expected: answers, normalized };
-}
-
-// --- Массив задач ---
-const allTasks = [
-  {
-    type: 'polynomial_factorization',
-
-    generate: function () {
-      while (true) {
-        try {
-          const x_vars = ['m','n','p','k'];
-          const x = choice(x_vars);
-          const y = choice(x_vars.filter(v=>v!==x));
-
-          const k1 = choice([3,4,6,7,8,9,-3,-4,-6,-7,-8,-9]);
-          const k2_candidates = [5,11,13,-5,-11,-13].filter(n=>gcd(Math.abs(k1),Math.abs(n))===1);
-          if (!k2_candidates.length) continue;
-          const k2 = choice(k2_candidates);
-
-          const p_set=[2,3,5,7];
-          const possible_nods=[];
-          for (const p1 of p_set){
-            for (const p2 of p_set){
-              if(p1===p2) continue;
-              const nod=p1*p2;
-              if(nod%10===0) continue;
-              if(Math.abs(nod*k1)<100 && Math.abs(nod*k2)<100) possible_nods.push(nod);
-            }
-          }
-          if(!possible_nods.length) continue;
-          const k_nod=choice(possible_nods);
-
-          const p_x_nod=randint(2,6);
-          const p_y_nod=choice([1,2,3,4,5,6].filter(n=>n!==p_x_nod));
-
-          const p_x_1=randint(2,6), p_y_1=randint(2,6);
-          const p_x_2_range=Array.from({length:Math.min(6,8-p_x_1)-1},(_,i)=>i+2);
-          const p_x_2_options=p_x_2_range.filter(n=>Math.abs(n-p_x_1)>=2);
-          if(!p_x_2_options.length) continue;
-          const p_x_2=choice(p_x_2_options);
-          const p_y_2_range=Array.from({length:Math.min(6,8-p_y_1)-1},(_,i)=>i+2);
-          const p_y_2_options=p_y_2_range.filter(n=>Math.abs(n-p_y_1)>=2);
-          if(!p_y_2_options.length) continue;
-          const p_y_2=choice(p_y_2_options);
-
-          const p_x_3_range=Array.from({length:Math.min(6,12-p_x_1-p_x_2)-1},(_,i)=>i+2);
-          const p_x_3_options=p_x_3_range.filter(n=>Math.abs(n-p_x_1)>=2&&Math.abs(n-p_x_2)>=1);
-          if(!p_x_3_options.length) continue;
-          const p_x_3=choice(p_x_3_options);
-          const p_y_3_range=Array.from({length:Math.min(6,12-p_y_1-p_y_2)-1},(_,i)=>i+2);
-          const p_y_3_options=p_y_3_range.filter(n=>Math.abs(n-p_y_1)>=2&&Math.abs(n-p_y_2)>=3);
-          if(!p_y_3_options.length) continue;
-          const p_y_3=choice(p_y_3_options);
-
-          let k3_range=[];
-          for(let n=-19;n<=19;n++){
-            if(Math.abs(n)<2) continue;
-            if(gcd(Math.abs(k1),Math.abs(n))!==1) continue;
-            if(gcd(Math.abs(k2),Math.abs(n))!==1) continue;
-            if(Math.abs(k_nod*n)>=100) continue;
-            if((k_nod*n)%10===0) continue;
-            k3_range.push(n);
-          }
-          let k3_options=(k1>0&&k2>0)?k3_range.filter(n=>n<0):k3_range;
-          if(!k3_options.length) continue;
-          const k3=choice(k3_options);
-
-          if(Math.abs(k_nod*k1)>=100||Math.abs(k_nod*k2)>=100||Math.abs(k_nod*k3)>=100) continue;
-
-          const monomials=[
-            {coeff:k_nod*k1,x_exp:p_x_nod+p_x_1,y_exp:p_y_nod+p_y_1},
-            {coeff:k_nod*k2,x_exp:p_x_nod+p_x_2,y_exp:p_y_nod+p_y_2},
-            {coeff:k_nod*k3,x_exp:p_x_nod+p_x_3,y_exp:p_y_nod+p_y_3}
-          ];
-          monomials.forEach(m=>m.total_degree=m.x_exp+m.y_exp);
-          monomials.sort((a,b)=>(b.total_degree-a.total_degree)||(b.x_exp-a.x_exp));
-
-          const fmt=(c,xv,xe,yv,ye,first)=>{
-            let sign=first?'':(c<0?' - ':' + ');
-            if(first&&c<0) sign='-';
-            return `${sign}${Math.abs(c)}${xv}<sup>${xe}</sup>${yv}<sup>${ye}</sup>`;
-          };
-
-          const problemText=
-            fmt(monomials[0].coeff,x,monomials[0].x_exp,y,monomials[0].y_exp,true)+
-            fmt(monomials[1].coeff,x,monomials[1].x_exp,y,monomials[1].y_exp,false)+
-            fmt(monomials[2].coeff,x,monomials[2].x_exp,y,monomials[2].y_exp,false);
-
-          return { problemText, variables:{k_nod,k1,k2,k3,x,y,p_x_nod,p_y_nod,p_x_1,p_y_1,p_x_2,p_y_2,p_x_3,p_y_3}};
-        } catch(_){ continue; }
+      if (left <= 0) {
+        clearInterval(state.timerId);
+        state.finished = true;
+        autoCheckWhenTimeUp();
       }
-    },
-
-    calculateAnswer: function(vars){
-      const {k_nod,k1,k2,k3,x,y,p_x_nod,p_y_nod,p_x_1,p_y_1,p_x_2,p_y_2,p_x_3,p_y_3}=vars;
-      const gcf_string=`${k_nod}${x}^${p_x_nod}${y}^${p_y_nod}`;
-      let inner=[
-        {coeff:k1,x_exp:p_x_1,y_exp:p_y_1},
-        {coeff:k2,x_exp:p_x_2,y_exp:p_y_2},
-        {coeff:k3,x_exp:p_x_3,y_exp:p_y_3}
-      ];
-      inner.forEach(m=>m.total_degree=m.x_exp+m.y_exp);
-      inner.sort((a,b)=>(b.total_degree-a.total_degree)||(b.x_exp-a.x_exp));
-
-      const fmt=(c,xv,xe,yv,ye)=>`${c>0?'+':''}${c}${xv}^${xe}${yv}^${ye}`;
-      let inner_str=fmt(inner[0].coeff,x,inner[0].x_exp,y,inner[0].y_exp).replace(/^\+/, '');
-      inner_str+=fmt(inner[1].coeff,x,inner[1].x_exp,y,inner[1].y_exp);
-      inner_str+=fmt(inner[2].coeff,x,inner[2].x_exp,y,inner[2].y_exp);
-      const ans1=`${gcf_string}(${inner_str})`.replace(/\s/g,'');
-
-      let inner_neg=fmt(-inner[0].coeff,x,inner[0].x_exp,y,inner[0].y_exp).replace(/^\+/, '');
-      inner_neg+=fmt(-inner[1].coeff,x,inner[1].x_exp,y,inner[1].y_exp);
-      inner_neg+=fmt(-inner[2].coeff,x,inner[2].x_exp,y,inner[2].y_exp);
-      const ans2=`-${gcf_string}(${inner_neg})`.replace(/\s/g,'');
-
-      return [ans1,ans2];
-    }
+    }, 1000);
   }
-];
+
+  function autoCheckWhenTimeUp() {
+    // Автоматическая проверка при окончании времени
+    // Имитация клика по «Проверить», если еще не нажимали
+    try {
+      const btn = $('#checkBtn');
+      if (btn && !btn.disabled) btn.click();
+    } catch (_){}
+  }
+
+  // ---- UI building ----
+  function buildProblemCard(idx, html) {
+    const wrap = document.createElement('div');
+    wrap.className = 'problem-card';
+
+    const title = document.createElement('div');
+    title.className = 'problem-title';
+    title.innerHTML = `Задание ${idx + 1}: <span class="problem-text">${html}</span>`;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'answer-input';
+    input.placeholder = 'Введите факторизацию, напр.: 6k^5p^7(6k^4p^2+13k^2p^4+11)';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+
+    const small = document.createElement('div');
+    small.className = 'help-line';
+    small.innerHTML = 'Разрешены формы: <code>G(…)</code> и <code>-G(-…)</code>, где <code>G</code> — наибольший общий множитель.';
+
+    const feedback = document.createElement('div');
+    feedback.className = 'feedback';
+
+    wrap.appendChild(title);
+    wrap.appendChild(input);
+    wrap.appendChild(small);
+    wrap.appendChild(feedback);
+
+    return { wrap, input, feedback };
+  }
+
+  // ---- Rendering and generation ----
+  function pickTasks() {
+    const howMany = trainerSettings.problemsToSelect || 1;
+    const picked = [];
+
+    // сейчас у нас один тип — возьмём по generate()
+    for (let i = 0; i < howMany; i++) {
+      const task = allTasks[0];
+      const { problemText, variables } = task.generate();
+      picked.push({ task, vars: variables, problemText });
+    }
+    return picked;
+  }
+
+  function render() {
+    // header
+    $('#trainer-title').textContent = trainerSettings.title || 'Тренажёр';
+    $('#trainer-subtitle').textContent = 'Разложите многочлен на множители методом вынесения общего множителя';
+
+    // problems
+    const $container = $('#problems-container');
+    $container.innerHTML = '';
+
+    state.selected = pickTasks().map((p, i) => {
+      const { wrap, input, feedback } = buildProblemCard(i, p.problemText);
+      $container.appendChild(wrap);
+      return { ...p, el: { container: wrap, input, feedback } };
+    });
+
+    // buttons
+    const $check = $('#checkBtn');
+    $check.disabled = false;
+    $check.onclick = onCheck;
+
+    const $print = $('#printBtn');
+    if ($print) {
+      $print.onclick = () => window.print();
+    }
+
+    // timer
+    startTimer();
+  }
+
+  // ---- Checking ----
+  function showFeedback(el, type, message, extraHtml = '') {
+    // type: 'ok' | 'format' | 'wrong' | 'error'
+    el.className = `feedback ${type}`;
+    el.innerHTML = message + (extraHtml ? `<div class="details">${extraHtml}</div>` : '');
+  }
+
+  function onCheck() {
+    state.finished = true;
+    if (state.timerId) clearInterval(state.timerId);
+    $('#checkBtn').disabled = true;
+
+    let correctCount = 0;
+
+    state.selected.forEach(({ task, vars, el }, idx) => {
+      const raw = el.input.value || '';
+      // если пусто — сразу отметка
+      if (!raw.trim()) {
+        showFeedback(el.feedback, 'format', 'Пустой ответ. Введите факторизацию, пример: <code>6k^5p^7(6k^4p^2+13k^2p^4+11)</code>');
+        return;
+      }
+
+      try {
+        const res = isAnswerCorrect(raw, task, vars);
+        if (res.error === 'format') {
+          const examples = `Ожидается форма <code>G(…)</code> или <code>-G(-…)</code>, где <code>G=${vars.k_nod}${vars.x}^${vars.p_x_nod}${vars.y}^${vars.p_y_nod}</code>.`;
+          showFeedback(el.feedback, 'format', 'Неверный формат ответа.', examples);
+          return;
+        }
+        if (res.correct) {
+          correctCount++;
+          showFeedback(el.feedback, 'ok', 'Верно!');
+        } else {
+          // показать оба допустимых эталона
+          const answers = task.calculateAnswer(vars);
+          const pretty = answers.map(a => `<code>${a}</code>`).join('<br>');
+          showFeedback(el.feedback, 'wrong', 'Неверно.', `Правильные варианты:<br>${pretty}`);
+        }
+      } catch (e) {
+        console.error(e);
+        showFeedback(el.feedback, 'error', 'Внутренняя ошибка при проверке. Посмотрите консоль браузера.');
+      }
+    });
+
+    // Итог
+    const $results = $('#results');
+    const $score = $('#score-text');
+    $results.classList.remove('hidden');
+    $score.textContent = `Результат: ${correctCount} из ${state.selected.length}`;
+  }
+
+  // ---- Boot ----
+  document.addEventListener('DOMContentLoaded', () => {
+    const missing = assertGlobals();
+    if (missing.length) {
+      // Покажем аккуратно, чтобы было видно проблему и пользователю
+      const $container = $('#problems-container');
+      $container.innerHTML = `
+        <div class="error-box">
+          Не найдены необходимые скрипты: <b>${missing.join(', ')}</b>.<br>
+          Проверьте подключение <code>8_1.1.1.js</code> перед <code>trainer.js</code>.
+        </div>`;
+      $('#checkBtn').disabled = true;
+      return;
+    }
+    render();
+  });
+
+})();
